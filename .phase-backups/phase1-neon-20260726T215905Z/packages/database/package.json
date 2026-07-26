@@ -1,0 +1,27 @@
+{
+  "name": "@media/database",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prisma": "prisma",
+    "generate": "prisma generate",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo database-lint-ok",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0",
+    "typescript": "^5.9.2"
+  },
+  "main": "./dist/client.js",
+  "types": "./dist/client.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    }
+  }
+}

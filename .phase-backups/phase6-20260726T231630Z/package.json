@@ -1,0 +1,30 @@
+{
+  "name": "media-hosting-platform",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "argon2",
+      "esbuild",
+      "prisma"
+    ]
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @media/database --filter @media/api --filter @media/web dev",
+    "build": "pnpm --filter @media/database build && pnpm --filter @media/api build && pnpm --filter @media/web build",
+    "typecheck": "pnpm --filter @media/database typecheck && pnpm --filter @media/api typecheck && pnpm --filter @media/web typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter @media/api test",
+    "test:coverage": "pnpm --filter @media/api test:coverage",
+    "db:generate": "pnpm --filter @media/database generate",
+    "db:migrate": "pnpm --filter @media/database prisma migrate dev",
+    "db:deploy": "pnpm --filter @media/database prisma migrate deploy",
+    "db:check": "pnpm --filter @media/database db:check",
+    "cleanup:uploads": "pnpm --filter @media/api cleanup:uploads",
+    "verify": "pnpm db:generate && pnpm db:check && pnpm typecheck && pnpm test && pnpm build"
+  }
+}
