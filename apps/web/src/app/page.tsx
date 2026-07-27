@@ -1,12 +1,57 @@
-export default function HomePage(){
- return <main className="min-vh-100 bg-white">
-  <nav className="navbar navbar-expand-lg bg-white border-bottom"><div className="container py-2">
-   <a className="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#"><span className="auth-brand-mark">MP</span>Media Platform</a>
-   <div className="d-flex gap-2"><a className="btn btn-outline-primary" href="/auth/login">Sign in</a><a className="btn btn-primary" href="/auth/register">Get started</a></div>
-  </div></nav>
-  <section className="container py-5"><div className="row align-items-center g-5 py-lg-5">
-   <div className="col-lg-6"><span className="badge text-bg-primary mb-3">Secure media infrastructure</span><h1 className="display-5 fw-bold">Store, organize and deliver media from one clean dashboard.</h1><p className="lead text-secondary">Chunked uploads, private delivery, public assets, API keys, usage monitoring and account security.</p><div className="d-flex gap-2"><a className="btn btn-primary btn-lg" href="/auth/register">Create workspace</a><a className="btn btn-outline-secondary btn-lg" href="/auth/login">Open dashboard</a></div></div>
-   <div className="col-lg-6"><div className="card shadow-sm"><div className="card-body p-4"><div className="row g-3">{["Chunked uploads","Signed delivery","Image variants","Scoped API keys","Audit logs","Session security"].map((x,i)=><div className="col-6" key={x}><div className="border rounded p-3 h-100"><i className={`bi ${["bi-cloud-arrow-up","bi-shield-lock","bi-images","bi-key","bi-clock-history","bi-person-check"][i]} text-primary fs-4`}/><div className="fw-semibold mt-2">{x}</div></div></div>)}</div></div></div></div>
-  </div></section>
- </main>
+import { ThemeToggle } from "@/components/theme-toggle";
+
+export default function HomePage() {
+  return <main className="vbg-report mp-public-page">
+    <div className="vbg-shell">
+      <a className="vbg-skip-link" href="#main">Skip to content</a>
+      <header className="vbg-header">
+        <div className="vbg-masthead">
+          <a className="vbg-identity" href="/">
+            <span className="mp-triangle" aria-hidden="true" />
+            <span>Media Platform</span>
+          </a>
+          <div className="vbg-document-meta mp-public-actions">
+            <ThemeToggle compact />
+            <a href="/auth/login">Sign in</a>
+            <a href="/auth/register">Create workspace</a>
+          </div>
+        </div>
+      </header>
+      <main id="main">
+        <section className="vbg-opening">
+          <div className="vbg-opening-claim">
+            <h1 className="vbg-display">One workspace for the entire media lifecycle.</h1>
+          </div>
+          <div className="vbg-opening-proof">
+            <p className="vbg-lede">
+              Resumable uploads, local storage, signed delivery, image variants,
+              scoped API keys and database-backed session security.
+            </p>
+            <div className="vbg-cluster">
+              <a className="vbg-button" href="/auth/register">Create workspace</a>
+              <a className="vbg-button" href="/docs">Read API documentation</a>
+            </div>
+          </div>
+        </section>
+        <section className="vbg-section">
+          <div className="vbg-stat-strip">
+            <div className="vbg-stat"><div className="vbg-stat-label">Upload</div><div className="vbg-stat-value">8 MB</div><div className="vbg-stat-detail">Resumable chunks</div></div>
+            <div className="vbg-stat"><div className="vbg-stat-label">Integrity</div><div className="vbg-stat-value">SHA-256</div><div className="vbg-stat-detail">Streaming verification</div></div>
+            <div className="vbg-stat"><div className="vbg-stat-label">Delivery</div><div className="vbg-stat-value">Range</div><div className="vbg-stat-detail">Seekable media</div></div>
+          </div>
+        </section>
+        <section className="vbg-section vbg-split">
+          <div className="vbg-span-5"><h2 className="vbg-heading-24">A complete operational surface</h2></div>
+          <div className="vbg-span-7 vbg-flow">
+            <p>Organize assets in nested folders, expose selected files publicly, generate image previews and inspect every workspace action through audit logs.</p>
+            <p>Use browser sessions for people and scoped API keys for trusted server applications.</p>
+          </div>
+        </section>
+      </main>
+      <footer className="vbg-footer">
+        <span className="mp-triangle" aria-hidden="true" />
+        <span>Media Platform</span>
+      </footer>
+    </div>
+  </main>;
 }

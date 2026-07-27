@@ -1,74 +1,186 @@
 "use client";
+
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/api";
+import { ThemeToggle } from "@/components/theme-toggle";
 
-const links = [
-  ["Overview", "/dashboard", "bi-speedometer2"],
-  ["Media", "/dashboard/media", "bi-images"],
-  ["Folders", "/dashboard/folders", "bi-folder2-open"],
-  ["Upload", "/dashboard/upload", "bi-cloud-arrow-up"],
-  ["Usage", "/dashboard/usage", "bi-bar-chart"],
-  ["Audit logs", "/dashboard/audit", "bi-clock-history"],
-  ["API docs", "/dashboard/api-docs", "bi-braces"],
-  ["API keys", "/dashboard/api-keys", "bi-key"],
-  ["Account", "/dashboard/account", "bi-person-circle"],
-  ["Security", "/dashboard/security", "bi-shield-check"]
+const groups = [
+  {
+    label: "Workspace",
+    links: [
+      ["Overview", "/dashboard"],
+      ["Media", "/dashboard/media"],
+      ["Folders", "/dashboard/folders"],
+      ["Upload", "/dashboard/upload"],
+      ["Usage", "/dashboard/usage"]
+    ]
+  },
+  {
+    label: "Operations",
+    links: [
+      ["Audit logs", "/dashboard/audit"],
+      ["API documentation", "/dashboard/api-docs"],
+      ["API keys", "/dashboard/api-keys"]
+    ]
+  },
+  {
+    label: "Account",
+    links: [
+      ["Profile", "/dashboard/account"],
+      ["Security", "/dashboard/security"]
+    ]
+  }
 ] as const;
 
-function Nav({ close }: { close?: () => void }) {
+function Navigation({ close }: { close?: () => void }) {
   const pathname = usePathname();
-  return <nav className="app-nav nav flex-column">
-    {links.map(([label, href, icon]) => {
-      const active = href === "/dashboard" ? pathname === href : pathname.startsWith(href);
-      return <a key={href} href={href} onClick={close} className={`nav-link ${active ? "active" : ""}`}>
-        <i className={`bi ${icon}`} /><span>{label}</span>
-      </a>;
-    })}
-  </nav>;
+
+  return (
+    <nav aria-label="Primary navigation">
+      {groups.map(group => (
+        <div className="mp-nav-section" key={group.label}>
+          <div className="mp-nav-group">{group.label}</div>
+          <div className="mp-nav">
+            {group.links.map(([label, href]) => {
+              const active =
+                href === "/dashboard"
+                  ? pathname === href
+                  : pathname.startsWith(href);
+
+              return (
+                <a
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  onClick={close}
+                >
+                  {label}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
-  async function signOut() {
+export function DashboardShell({
+  children
+}: {
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent): void {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  async function signOut(): Promise<void> {
     await logout();
     window.location.assign("/auth/login");
   }
-  function toggleMobile(open: boolean) {
-    document.getElementById("mobileSidebar")?.classList.toggle("show", open);
-    document.getElementById("mobileBackdrop")?.classList.toggle("d-none", !open);
-  }
-  return <div className="app-shell">
-    <aside className="app-sidebar">
-      <a className="app-brand" href="/dashboard"><span className="auth-brand-mark">MP</span><strong>Media Platform</strong></a>
-      <Nav />
-    </aside>
 
-    <div id="mobileSidebar" className="offcanvas offcanvas-start sidebar-mobile" tabIndex={-1}>
-      <div className="offcanvas-header border-bottom border-secondary">
-        <h5 className="offcanvas-title">Media Platform</h5>
-        <button className="btn-close" onClick={() => toggleMobile(false)} />
-      </div>
-      <div className="offcanvas-body p-0"><Nav close={() => toggleMobile(false)} /></div>
-    </div>
-    <div id="mobileBackdrop" className="offcanvas-backdrop fade show d-none" onClick={() => toggleMobile(false)} />
+  return (
+    <div className="mp-shell">
+      <a className="mp-skip" href="#main">Skip to content</a>
 
-    <div className="app-main">
-      <header className="app-header px-3 px-lg-4 d-flex align-items-center justify-content-between">
-        <div className="d-flex align-items-center gap-2">
-          <button className="btn btn-outline-secondary btn-icon d-lg-none" onClick={() => toggleMobile(true)} aria-label="Open menu">
-            <i className="bi bi-list fs-5" />
+      <button
+        className="mp-backdrop"
+        data-open={open}
+        aria-label="Close navigation"
+        onClick={() => setOpen(false)}
+      />
+
+      <aside
+        className="mp-sidebar"
+        data-open={open}
+        aria-label="Workspace navigation"
+      >
+        <div className="mp-sidebar-head">
+          <a className="mp-brand" href="/dashboard">
+            <span className="mp-triangle" aria-hidden="true" />
+            <span>Media Platform</span>
+          </a>
+          <button
+            type="button"
+            className="mp-sidebar-close"
+            aria-label="Close navigation"
+            onClick={() => setOpen(false)}
+          >
+            ×
           </button>
-          <div><strong>Workspace</strong><div className="text-secondary small d-none d-sm-block">Secure media management</div></div>
         </div>
-        <div className="d-flex gap-2">
-          <a className="btn btn-primary btn-sm" href="/dashboard/upload"><i className="bi bi-cloud-arrow-up me-1" />Upload</a>
-          <button className="btn btn-outline-secondary btn-sm" onClick={signOut}><i className="bi bi-box-arrow-right me-1" />Logout</button>
-        </div>
-      </header>
-      <main className="app-content">{children}</main>
-    </div>
 
-    <nav className="mobile-bottom-nav">
-      {links.slice(0, 5).map(([label, href, icon]) => <a href={href} key={href}><i className={`bi ${icon}`} /><span>{label}</span></a>)}
-    </nav>
-  </div>;
+        <Navigation close={() => setOpen(false)} />
+
+        <div className="mp-sidebar-foot">
+          <div className="mp-sidebar-status">
+            <span className="mp-status-dot" aria-hidden="true" />
+            Workspace connected
+          </div>
+          <a href="/docs">Developer documentation</a>
+        </div>
+      </aside>
+
+      <div className="mp-main">
+        <header className="mp-topbar">
+          <div className="mp-topbar-left">
+            <button
+              type="button"
+              className="mp-button mp-mobile-menu"
+              onClick={() => setOpen(true)}
+            >
+              Menu
+            </button>
+            <div className="mp-topbar-meta">
+              <div className="mp-topbar-title">Workspace</div>
+              <div className="mp-topbar-subtitle">
+                Secure media infrastructure
+              </div>
+            </div>
+          </div>
+
+          <div className="mp-topbar-actions">
+            <ThemeToggle compact />
+            <a
+              className="mp-button"
+              data-primary="true"
+              href="/dashboard/upload"
+            >
+              Upload
+            </a>
+            <button type="button" className="mp-button" onClick={signOut}>
+              Sign out
+            </button>
+          </div>
+        </header>
+
+        <main id="main" className="mp-content">
+          {children}
+        </main>
+      </div>
+
+      <nav className="mp-mobile-nav" aria-label="Mobile navigation">
+        <a href="/dashboard">Overview</a>
+        <a href="/dashboard/media">Media</a>
+        <a href="/dashboard/folders">Folders</a>
+        <a href="/dashboard/upload">Upload</a>
+        <a href="/dashboard/account">Account</a>
+      </nav>
+    </div>
+  );
 }

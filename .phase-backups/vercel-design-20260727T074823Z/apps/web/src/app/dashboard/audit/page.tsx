@@ -1,0 +1,7 @@
+"use client";
+import { useEffect,useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState,Feedback,LoadingBlock } from "@/components/feedback";
+import { apiRequest } from "@/lib/api";
+type Log={id:string;action:string;entityType:string;entityId:string|null;ipAddress:string|null;createdAt:string;metadata:unknown};
+export default function Page(){const[logs,setLogs]=useState<Log[]>([]);const[error,setError]=useState("");const[loading,setLoading]=useState(true);useEffect(()=>{apiRequest<{data:Log[]}>("/api/v1/audit-logs").then(r=>setLogs(r.data)).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[]);return <><PageHeader title="Audit logs" subtitle="Workspace security and lifecycle activity."/><Feedback message={error} variant="danger"/><div className="card">{loading?<div className="card-body"><LoadingBlock/></div>:logs.length===0?<EmptyState icon="bi-clock-history" title="No audit entries" text="Workspace actions will appear here."/>:<div className="table-responsive"><table className="table table-hover mb-0"><thead><tr><th>Action</th><th>Entity</th><th>IP address</th><th>Date</th></tr></thead><tbody>{logs.map(l=><tr key={l.id}><td><code>{l.action}</code></td><td>{l.entityType}<div className="text-secondary small">{l.entityId??"—"}</div></td><td>{l.ipAddress??"—"}</td><td>{new Date(l.createdAt).toLocaleString()}</td></tr>)}</tbody></table></div>}</div></>}

@@ -1,0 +1,12 @@
+"use client";
+import { FormEvent,useEffect,useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState,Feedback,LoadingBlock } from "@/components/feedback";
+import { apiRequest } from "@/lib/api";
+type Folder={id:string;name:string;pathKey:string;depth:number;createdAt:string};
+export default function Page(){const [items,setItems]=useState<Folder[]>([]);const [error,setError]=useState("");const [loading,setLoading]=useState(true);
+ async function load(){setLoading(true);try{const r=await apiRequest<{data:Folder[]}>("/api/v1/folders");setItems(r.data)}catch(e){setError((e as Error).message)}finally{setLoading(false)}}useEffect(()=>{load()},[]);
+ async function create(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);await apiRequest("/api/v1/folders",{method:"POST",body:JSON.stringify({name:f.get("name"),parentId:null})});e.currentTarget.reset();load()}
+ async function remove(id:string){if(!confirm("Delete this empty folder?"))return;await apiRequest(`/api/v1/folders/${id}`,{method:"DELETE"});load()}
+ return <><PageHeader title="Folders" subtitle="Organize media with nested workspace folders."/>{<Feedback message={error} variant="danger"/>}<div className="row g-4"><div className="col-lg-4"><form className="card" onSubmit={create}><div className="card-header"><strong>Create folder</strong></div><div className="card-body"><label className="form-label">Folder name</label><input className="form-control" name="name" required/></div><div className="card-footer bg-white"><button className="btn btn-primary">Create folder</button></div></form></div><div className="col-lg-8"><div className="card"><div className="card-header"><strong>Root folders</strong></div>{loading?<div className="card-body"><LoadingBlock/></div>:items.length===0?<EmptyState icon="bi-folder2-open" title="No folders yet" text="Create a folder to organize uploaded media."/>:<div className="list-group list-group-flush">{items.map(f=><div className="list-group-item d-flex align-items-center justify-content-between gap-3" key={f.id}><a href={`/dashboard/folders/${f.id}`} className="d-flex align-items-center gap-3 text-dark flex-grow-1"><span className="file-thumb"><i className="bi bi-folder-fill text-warning"/></span><div><strong>{f.name}</strong><div className="text-secondary small">{f.pathKey}</div></div></a><button className="btn btn-outline-danger btn-sm" onClick={()=>remove(f.id)}><i className="bi bi-trash"/></button></div>)}</div>}</div></div></div></>
+}

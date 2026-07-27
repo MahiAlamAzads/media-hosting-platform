@@ -36,13 +36,11 @@ export async function apiRequest<T>(
     headers.set("content-type", "application/json");
   }
   if (token) headers.set("authorization", `Bearer ${token}`);
-
   let response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers,
     credentials: "include"
   });
-
   if (response.status === 401 && retry && !path.includes("/auth/")) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
@@ -54,7 +52,6 @@ export async function apiRequest<T>(
       });
     }
   }
-
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     const error = new Error(payload?.error?.message ?? `Request failed (${response.status}).`);
