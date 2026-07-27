@@ -19,6 +19,7 @@ import publicMediaRouter from "./modules/public/public-media.route.js";
 import variantsRouter from "./modules/variants/variants.route.js";
 import accountRouter from "./modules/account/account.route.js";
 import accountPublicRouter from "./modules/account/account-public.route.js";
+import docsRouter from "./modules/docs/docs.route.js";
 import { env } from "./config/env.js";
 import { AppError } from "./shared/http.js";
 import { storageHealth } from "./infrastructure/storage.js";
@@ -92,6 +93,7 @@ app.get("/health/storage", async (_req, res, next) => {
   }
 });
 
+app.use("/api/v1/docs", docsRouter);
 app.use("/api/v1/public", publicMediaRouter);
 app.use("/api/v1/account-public", express.json({ limit: "1mb" }), accountPublicRouter);
 app.use("/api/v1/delivery", deliveryRouter);

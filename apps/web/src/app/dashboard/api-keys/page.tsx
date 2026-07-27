@@ -1,23 +1,12 @@
 "use client";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent,useEffect,useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { Feedback,LoadingBlock } from "@/components/feedback";
 import { apiRequest } from "@/lib/api";
-type Key={id:string;name:string;prefix:string;scopes:string[];createdAt:string;lastUsedAt:string|null;revokedAt:string|null};
-export default function ApiKeysPage(){
- const [keys,setKeys]=useState<Key[]>([]);const [secret,setSecret]=useState("");const [message,setMessage]=useState("");
- const load=()=>apiRequest<{data:Key[]}>("/api/v1/api-keys").then(r=>setKeys(r.data)).catch(e=>setMessage(e.message));
- useEffect(()=>{load()},[]);
- async function create(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);
-  const scopes=f.getAll("scopes");const r=await apiRequest<{data:{rawKey:string}}>("/api/v1/api-keys",{method:"POST",body:JSON.stringify({name:f.get("name"),scopes})});
-  setSecret(r.data.rawKey);e.currentTarget.reset();load();
- }
- async function revoke(id:string){await apiRequest(`/api/v1/api-keys/${id}`,{method:"DELETE"});load();}
- return <section className="content"><div className="page-heading"><div><h1>API keys</h1><p className="muted">Scoped server-to-server credentials.</p></div></div>
- {secret&&<div className="secret-box"><strong>Copy this key now. It will not be shown again.</strong><code>{secret}</code></div>}
- {message&&<div className="notice error">{message}</div>}
- <div className="settings-grid"><form className="card" onSubmit={create}><h2>Create key</h2>
-  <label className="field">Name<input name="name" required /></label>
-  <div className="scope-grid">{["media:read","media:write","media:delete","folders:read","folders:write","uploads:write","usage:read"].map(s=><label key={s}><input type="checkbox" name="scopes" value={s}/>{s}</label>)}</div>
-  <button className="secondary">Create key</button></form>
-  <div className="card"><h2>Existing keys</h2><div className="data-list">{keys.map(k=><div className="data-row" key={k.id}><div><strong>{k.name}</strong><div className="muted">{k.prefix} · {k.scopes.join(", ")}</div></div>{!k.revokedAt&&<button className="danger-button" onClick={()=>revoke(k.id)}>Revoke</button>}</div>)}</div></div>
- </div></section>;
+type K={id:string;name:string;prefix:string;scopes:string[];createdAt:string;lastUsedAt:string|null;revokedAt:string|null};
+const scopes=["media:read","media:write","media:delete","folders:read","folders:write","uploads:write","usage:read"];
+export default function Page(){const[keys,setKeys]=useState<K[]>([]);const[secret,setSecret]=useState("");const[msg,setMsg]=useState("");const[loading,setLoading]=useState(true);const load=()=>apiRequest<{data:K[]}>("/api/v1/api-keys").then(r=>setKeys(r.data)).catch(e=>setMsg(e.message)).finally(()=>setLoading(false));useEffect(()=>{load()},[]);
+ async function create(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);const r=await apiRequest<{data:{rawKey:string}}>("/api/v1/api-keys",{method:"POST",body:JSON.stringify({name:f.get("name"),scopes:f.getAll("scopes")})});setSecret(r.data.rawKey);e.currentTarget.reset();load()}
+ async function revoke(id:string){if(!confirm("Revoke this API key?"))return;await apiRequest(`/api/v1/api-keys/${id}`,{method:"DELETE"});load()}
+ return <><PageHeader title="API keys" subtitle="Scoped credentials for server-to-server access."/><Feedback message={msg} variant="danger"/>{secret&&<div className="alert alert-warning"><strong className="d-block mb-2">Copy this key now. It will not be shown again.</strong><div className="secret-value">{secret}</div></div>}<div className="row g-4"><div className="col-lg-5"><form className="card" onSubmit={create}><div className="card-header"><strong>Create API key</strong></div><div className="card-body"><div className="mb-3"><label className="form-label">Key name</label><input className="form-control" name="name" placeholder="Production uploader" required/></div><label className="form-label">Scopes</label><div className="row g-2">{scopes.map(s=><div className="col-sm-6" key={s}><label className="form-check border rounded p-2 ps-5 w-100"><input className="form-check-input" name="scopes" type="checkbox" value={s}/><span className="form-check-label small">{s}</span></label></div>)}</div></div><div className="card-footer bg-white"><button className="btn btn-primary">Create key</button></div></form></div><div className="col-lg-7"><div className="card"><div className="card-header"><strong>Existing keys</strong></div>{loading?<div className="card-body"><LoadingBlock/></div>:<div className="list-group list-group-flush">{keys.map(k=><div className="list-group-item" key={k.id}><div className="d-flex justify-content-between gap-3"><div><strong>{k.name}</strong><div className="text-secondary small">{k.prefix}</div></div>{k.revokedAt?<span className="badge text-bg-secondary align-self-start">Revoked</span>:<button className="btn btn-outline-danger btn-sm" onClick={()=>revoke(k.id)}>Revoke</button>}</div><div className="mt-2">{k.scopes.map(s=><span className="badge text-bg-light border me-1 mb-1" key={s}>{s}</span>)}</div></div>)}</div>}</div></div></div></>
 }

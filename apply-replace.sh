@@ -5,20 +5,30 @@ TARGET="${1:-}"
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET="$(cd "$TARGET" && pwd)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-BACKUP_DIR="$TARGET/.phase-backups/phase7-auth-$STAMP"
+BACKUP_DIR="$TARGET/.phase-backups/bootstrap-frontend-$STAMP"
 [[ "$TARGET" != "/" && "$TARGET" != "$HOME" ]] || { echo "Unsafe target" >&2; exit 65; }
-[[ -f "$TARGET/package.json" && -d "$TARGET/apps/api" && -d "$TARGET/apps/web" ]] || { echo "Wrong project target" >&2; exit 66; }
-mkdir -p "$BACKUP_DIR"
-while IFS= read -r -d '' source; do
-  rel="${source#"$SOURCE_DIR"/}"
-  [[ "$rel" == "MANIFEST.sha256" ]] && continue
-  dest="$TARGET/$rel"
-  if [[ -f "$dest" ]]; then mkdir -p "$BACKUP_DIR/$(dirname "$rel")"; cp -a "$dest" "$BACKUP_DIR/$rel"; fi
-  mkdir -p "$(dirname "$dest")"
-  cp -a "$source" "$dest"
-done < <(find "$SOURCE_DIR" -type f -print0)
+[[ -f "$TARGET/apps/web/package.json" && -d "$TARGET/apps/web/src" ]] || { echo "Target does not contain apps/web" >&2; exit 66; }
+
+mkdir -p "$BACKUP_DIR/apps/web"
+cp -a "$TARGET/apps/web/package.json" "$BACKUP_DIR/apps/web/package.json"
+cp -a "$TARGET/apps/web/src" "$BACKUP_DIR/apps/web/src"
+
+rm -rf "$TARGET/apps/web/src"
+mkdir -p "$TARGET/apps/web"
+cp -a "$SOURCE_DIR/apps/web/src" "$TARGET/apps/web/src"
+cp -a "$SOURCE_DIR/apps/web/package.json" "$TARGET/apps/web/package.json"
+cp -a "$SOURCE_DIR/README-BOOTSTRAP-FRONTEND.md" "$TARGET/README-BOOTSTRAP-FRONTEND.md"
+cp -a "$SOURCE_DIR/apply-replace.sh" "$TARGET/apply-replace.sh"
 chmod +x "$TARGET/apply-replace.sh"
-echo "Phase 7 auth completion applied."
+
+echo
+echo "Full Bootstrap frontend rewrite applied."
 echo "Backup: $BACKUP_DIR"
-echo "Preserved: .env, existing migrations, PostgreSQL data, media storage"
-echo "Run: pnpm install && pnpm db:generate && pnpm db:deploy && pnpm db:check && pnpm typecheck && pnpm test && pnpm build"
+echo "Preserved: backend, .env, database, migrations and media storage"
+echo
+echo "Run:"
+echo "  cd \"$TARGET\""
+echo "  pnpm install"
+echo "  pnpm typecheck"
+echo "  pnpm test"
+echo "  pnpm build"

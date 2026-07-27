@@ -1,29 +1,23 @@
-"use client";
-import { FormEvent, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { AuthShell } from "@/components/auth-shell";
+import { LoadingBlock } from "@/components/feedback";
+import { ResetPasswordClient } from "./reset-password-client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+function Fallback() {
+  return (
+    <AuthShell
+      title="Choose a new password"
+      subtitle="All existing sessions will be revoked."
+    >
+      <LoadingBlock label="Reading reset link…" />
+    </AuthShell>
+  );
+}
 
 export default function ResetPasswordPage() {
-  const params = useSearchParams();
-  const [message, setMessage] = useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const response = await fetch(`${API}/api/v1/auth/reset-password`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token: params.get("token"), password: form.get("password") })
-    });
-    const payload = await response.json();
-    setMessage(response.ok ? "Password changed. Sign in again." : payload.error?.message ?? "Reset failed.");
-  }
-  return <main className="auth"><form className="auth-card" onSubmit={submit}>
-    <h1>Choose a new password</h1>
-    <label className="field">New password<input name="password" type="password" minLength={12} required /></label>
-    <p className="muted">Use 12+ characters with uppercase, lowercase and a number.</p>
-    <button className="primary">Change password</button>
-    {message && <div className="notice">{message}</div>}
-    <a className="text-link" href="/auth/login">Sign in</a>
-  </form></main>;
+  return (
+    <Suspense fallback={<Fallback />}>
+      <ResetPasswordClient />
+    </Suspense>
+  );
 }

@@ -1,37 +1,11 @@
 "use client";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent,useEffect,useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { Feedback,LoadingBlock } from "@/components/feedback";
 import { apiRequest } from "@/lib/api";
-
-type Me = { id:string; name:string; email:string; emailVerifiedAt:string|null; memberships:Array<{role:string;workspace:{name:string;slug:string}}> };
-
-export default function AccountPage() {
-  const [me, setMe] = useState<Me|null>(null);
-  const [message, setMessage] = useState("");
-  useEffect(() => { apiRequest<{data:Me}>("/api/v1/account/me").then(r=>setMe(r.data)).catch(e=>setMessage(e.message)); }, []);
-  async function profile(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const f=new FormData(event.currentTarget);
-    const r=await apiRequest<{data:Me}>("/api/v1/account/profile",{method:"PATCH",body:JSON.stringify({name:f.get("name")})});
-    setMe(current=>current?{...current,name:r.data.name}:current); setMessage("Profile updated.");
-  }
-  async function email(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const f=new FormData(event.currentTarget);
-    await apiRequest("/api/v1/account/change-email",{method:"POST",body:JSON.stringify({newEmail:f.get("newEmail"),currentPassword:f.get("currentPassword")})});
-    setMessage("Confirmation sent to the new email address.");
-  }
-  return <section className="content">
-    <div className="page-heading"><div><h1>Account</h1><p className="muted">Profile and verified email.</p></div></div>
-    {message && <div className="notice">{message}</div>}
-    <div className="settings-grid">
-      <form className="card" onSubmit={profile}><h2>Profile</h2>
-        <label className="field">Name<input name="name" defaultValue={me?.name ?? ""} required /></label>
-        <label className="field">Current email<input value={me?.email ?? ""} disabled /></label>
-        <button className="secondary">Save profile</button>
-      </form>
-      <form className="card" onSubmit={email}><h2>Change email</h2>
-        <label className="field">New email<input name="newEmail" type="email" required /></label>
-        <label className="field">Current password<input name="currentPassword" type="password" required /></label>
-        <button className="secondary">Send confirmation</button>
-      </form>
-    </div>
-  </section>;
+type Me={name:string;email:string;emailVerifiedAt:string|null;memberships:Array<{role:string;workspace:{name:string;slug:string;status:string}}>};
+export default function Page(){const[me,setMe]=useState<Me|null>(null);const[msg,setMsg]=useState("");const load=()=>apiRequest<{data:Me}>("/api/v1/account/me").then(r=>setMe(r.data)).catch(e=>setMsg(e.message));useEffect(()=>{load()},[]);
+ async function profile(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);await apiRequest("/api/v1/account/profile",{method:"PATCH",body:JSON.stringify({name:f.get("name")})});setMsg("Profile updated.");load()}
+ async function email(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);await apiRequest("/api/v1/account/change-email",{method:"POST",body:JSON.stringify({newEmail:f.get("newEmail"),currentPassword:f.get("currentPassword")})});setMsg("Confirmation sent to your new email.")}
+ return <><PageHeader title="Account" subtitle="Profile and verified email settings."/><Feedback message={msg} variant="info"/>{!me?<LoadingBlock/>:<div className="row g-4"><div className="col-lg-6"><form className="card" onSubmit={profile}><div className="card-header"><strong>Profile</strong></div><div className="card-body"><div className="mb-3"><label className="form-label">Name</label><input className="form-control" name="name" defaultValue={me.name}/></div><div><label className="form-label">Email</label><div className="input-group"><input className="form-control" value={me.email} disabled/><span className={`input-group-text ${me.emailVerifiedAt?"text-success":"text-warning"}`}>{me.emailVerifiedAt?"Verified":"Unverified"}</span></div></div></div><div className="card-footer bg-white"><button className="btn btn-primary">Save profile</button></div></form></div><div className="col-lg-6"><form className="card" onSubmit={email}><div className="card-header"><strong>Change email</strong></div><div className="card-body"><div className="mb-3"><label className="form-label">New email</label><input className="form-control" name="newEmail" type="email" required/></div><div><label className="form-label">Current password</label><input className="form-control" name="currentPassword" type="password" required/></div></div><div className="card-footer bg-white"><button className="btn btn-outline-primary">Send confirmation</button></div></form></div></div>}</>
 }
