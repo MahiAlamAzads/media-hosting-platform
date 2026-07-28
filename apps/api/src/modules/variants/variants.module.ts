@@ -1,0 +1,12 @@
+import type { ApiModuleDescriptor } from "../../core/module/api-module.js";
+import { VariantsHttpController } from "./variants.facade.controller.js";
+import { VariantsHttpRepository } from "./variants.facade.repository.js";
+import { VariantsHttpRoute } from "./variants.facade.route.js";
+import { VariantsHttpService } from "./variants.facade.service.js";
+import { VariantsHttpValidation } from "./variants.facade.validation.js";
+const repository=new VariantsHttpRepository();
+const validation=new VariantsHttpValidation();
+const service=new VariantsHttpService(repository,validation);
+const controller=new VariantsHttpController(service);
+const route=new VariantsHttpRoute(controller);
+export const variantsModule: ApiModuleDescriptor={name:"variants",mountPath:"/api/v1/variants",router:route.router};

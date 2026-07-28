@@ -15,9 +15,9 @@
     ]
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @media/database --filter @media/api --filter @media/web dev",
-    "build": "pnpm --filter @media/database build && pnpm --filter @media/api build && pnpm --filter @media/web build",
-    "typecheck": "pnpm --filter @media/database typecheck && pnpm --filter @media/api typecheck && pnpm --filter @media/web typecheck",
+    "dev": "pnpm --parallel --filter @media/database --filter @media/api --filter @media/web --filter @media/admin dev",
+    "build": "pnpm --filter @media/database build && pnpm --filter @media/api build && pnpm --filter @media/web build && pnpm --filter @media/admin build",
+    "typecheck": "pnpm --filter @media/database typecheck && pnpm --filter @media/api typecheck && pnpm --filter @media/web typecheck && pnpm --filter @media/admin typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm --filter @media/api test",
     "test:coverage": "pnpm --filter @media/api test:coverage",
@@ -27,6 +27,19 @@
     "db:check": "pnpm --filter @media/database db:check",
     "cleanup:uploads": "pnpm --filter @media/api cleanup:uploads",
     "process:media": "pnpm --filter @media/api process:media",
-    "verify": "pnpm db:generate && pnpm db:check && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm audit:forms && pnpm db:generate && pnpm db:check && pnpm typecheck && pnpm test && pnpm build",
+    "usage:aggregate": "pnpm --filter @media/api usage:aggregate",
+    "usage:reconcile": "pnpm --filter @media/api usage:reconcile",
+    "quota:release-expired": "pnpm --filter @media/api quota:release-expired",
+    "subscriptions:renew-periods": "pnpm --filter @media/api subscriptions:renew-periods",
+    "usage:send-alerts": "pnpm --filter @media/api usage:send-alerts",
+    "payments:generate-renewals": "pnpm --filter @media/api payments:generate-renewals",
+    "payments:expire-invoices": "pnpm --filter @media/api payments:expire-invoices",
+    "payments:reconcile-sslcommerz": "pnpm --filter @media/api payments:reconcile-sslcommerz",
+    "seed:admin": "pnpm --filter @media/api seed:admin",
+    "dev:admin": "pnpm --filter @media/admin dev",
+    "payg:charge": "pnpm --filter @media/api payg:charge",
+    "audit:forms": "node scripts/audit-async-form-events.mjs",
+    "test:architecture": "pnpm --filter @media/api test:architecture"
   }
 }

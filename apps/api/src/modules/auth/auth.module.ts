@@ -1,0 +1,12 @@
+import type { ApiModuleDescriptor } from "../../core/module/api-module.js";
+import { AuthHttpController } from "./auth.facade.controller.js";
+import { AuthHttpRepository } from "./auth.facade.repository.js";
+import { AuthHttpRoute } from "./auth.facade.route.js";
+import { AuthHttpService } from "./auth.facade.service.js";
+import { AuthHttpValidation } from "./auth.facade.validation.js";
+const repository=new AuthHttpRepository();
+const validation=new AuthHttpValidation();
+const service=new AuthHttpService(repository,validation);
+const controller=new AuthHttpController(service);
+const route=new AuthHttpRoute(controller);
+export const authModule: ApiModuleDescriptor={name:"auth",mountPath:"/api/v1/auth",router:route.router};

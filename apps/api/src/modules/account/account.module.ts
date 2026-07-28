@@ -1,0 +1,12 @@
+import type { ApiModuleDescriptor } from "../../core/module/api-module.js";
+import { AccountHttpController } from "./account.facade.controller.js";
+import { AccountHttpRepository } from "./account.facade.repository.js";
+import { AccountHttpRoute } from "./account.facade.route.js";
+import { AccountHttpService } from "./account.facade.service.js";
+import { AccountHttpValidation } from "./account.facade.validation.js";
+const repository=new AccountHttpRepository();
+const validation=new AccountHttpValidation();
+const service=new AccountHttpService(repository,validation);
+const controller=new AccountHttpController(service);
+const route=new AccountHttpRoute(controller);
+export const accountModule: ApiModuleDescriptor={name:"account",mountPath:"/api/v1/account",router:route.router};

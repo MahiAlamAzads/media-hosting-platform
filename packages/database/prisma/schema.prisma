@@ -64,6 +64,185 @@ enum VariantKind {
   PREVIEW
 }
 
+enum BillingCurrency {
+  BDT
+  USD
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum RevenueModel {
+  SUBSCRIPTION
+  PREPAID_PAYG
+  ENTERPRISE_CUSTOM
+}
+
+enum SubscriptionTerm {
+  FREE
+  THREE_MONTHS
+  SIX_MONTHS
+  ONE_YEAR
+  ENTERPRISE_CUSTOM
+}
+
+enum WalletStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum WalletTransactionKind {
+  TOP_UP
+  PAYG_DEBIT
+  ADMIN_CREDIT
+  ADMIN_DEBIT
+  REFUND
+  REVERSAL
+}
+
+enum EnterpriseInquiryStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  GRACE_PERIOD
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+}
+
+enum UsageMetric {
+  STORAGE_BYTES
+  DELIVERY_BYTES
+  UPLOAD_BYTES
+  API_REQUESTS
+  IMAGE_TRANSFORMATIONS
+  VIDEO_PROCESSING_SECONDS
+  PROCESSING_CPU_MILLISECONDS
+  ACTIVE_ASSETS
+  FOLDERS
+  WORKSPACE_MEMBERS
+  API_KEYS
+  CONCURRENT_JOBS
+  MAX_FILE_SIZE_BYTES
+}
+
+enum QuotaReservationStatus {
+  ACTIVE
+  COMMITTED
+  RELEASED
+  EXPIRED
+}
+
+enum UsageAlertEmailStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+enum SubscriptionChangeStatus {
+  PAYMENT_PENDING
+  PENDING
+  APPROVED
+  APPLIED
+  REJECTED
+  CANCELLED
+}
+
+enum InvoiceKind {
+  PLAN_CHANGE
+  RENEWAL
+  WALLET_TOPUP
+}
+
+enum InvoiceStatus {
+  OPEN
+  PAID
+  VOID
+  EXPIRED
+}
+
+enum PaymentMethod {
+  MANUAL
+  SSLCOMMERZ
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  UNDER_REVIEW
+  PAID
+  FAILED
+  CANCELLED
+  REJECTED
+  EXPIRED
+  REFUNDED
+}
+
+enum ManualPaymentChannel {
+  BANK_TRANSFER
+  BKASH
+  NAGAD
+  ROCKET
+  WISE
+  PAYONEER
+  OTHER
+}
+
+enum CardVaultProvider {
+  STRIPE
+  SSLCOMMERZ
+}
+
+enum SavedPaymentMethodStatus {
+  PENDING
+  ACTIVE
+  REQUIRES_ACTION
+  EXPIRED
+  FAILED
+  REMOVED
+}
+
+enum PaygPolicyStatus {
+  DISABLED
+  ACTIVE
+  PAUSED_PAYMENT_FAILED
+}
+
+enum PaygAuthorizationStatus {
+  ACTIVE
+  COMMITTED
+  RELEASED
+  EXPIRED
+}
+
+enum PaygLedgerStatus {
+  PENDING
+  CHARGED
+  FAILED
+  WAIVED
+}
+
+enum PaygChargeStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REQUIRES_ACTION
+  CANCELLED
+}
+
 model User {
   id                         String                   @id @default(cuid())
   name                       String
@@ -82,6 +261,13 @@ model User {
   apiKeysCreated             ApiKey[]                 @relation("ApiKeyCreatedBy")
   pendingEmailChanges          PendingEmailChange[]
   loginAttempts                LoginAttempt[]
+  subscriptionChangesRequested SubscriptionChange[]  @relation("SubscriptionChangeRequestedBy")
+  subscriptionChangesReviewed  SubscriptionChange[]  @relation("SubscriptionChangeReviewedBy")
+  billingInvoicesRequested      BillingInvoice[]      @relation("BillingInvoiceRequestedBy")
+  manualPaymentsReviewed        ManualPaymentSubmission[] @relation("ManualPaymentReviewedBy")
+  walletTransactionsCreated       WalletTransaction[]        @relation("WalletTransactionCreatedBy")
+  enterpriseInquiriesCreated      EnterpriseInquiry[]        @relation("EnterpriseInquiryCreatedBy")
+  enterpriseInquiriesAssigned     EnterpriseInquiry[]        @relation("EnterpriseInquiryAssignedTo")
   createdAt                  DateTime                 @default(now())
   updatedAt                  DateTime                 @updatedAt
 }
@@ -92,7 +278,7 @@ model Workspace {
   slug                  String            @unique
   storageRootKey        String            @unique
   status                WorkspaceStatus   @default(ACTIVE)
-  storageLimitBytes     BigInt            @default(107374182400)
+  storageLimitBytes     BigInt            @default(2147483648)
   storageUsedBytes      BigInt            @default(0)
   storageReservedBytes  BigInt            @default(0)
   members               WorkspaceMember[]
@@ -100,6 +286,23 @@ model Workspace {
   mediaAssets           MediaAsset[]
   uploadSessions        UploadSession[]
   apiKeys               ApiKey[]
+  subscription         WorkspaceSubscription?
+  billingPreference    BillingPreference?
+  usageEvents          UsageEvent[]
+  usageAggregates      UsageAggregate[]
+  quotaReservations    QuotaReservation[]
+  usageAlerts          UsageAlert[]
+  subscriptionChanges  SubscriptionChange[]
+  billingInvoices      BillingInvoice[]
+  billingProviderCustomers BillingProviderCustomer[]
+  savedPaymentMethods   SavedPaymentMethod[]
+  paygPolicy            PaygPolicy?
+  paygAuthorizations    PaygAuthorization[]
+  paygLedgerEntries     PaygLedgerEntry[]
+  paygChargeAttempts    PaygChargeAttempt[]
+  prepaidWallet         PrepaidWallet?
+  walletTransactions    WalletTransaction[]
+  enterpriseInquiries   EnterpriseInquiry[]
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 }
@@ -296,6 +499,7 @@ model UploadSession {
   receivedChunks Int          @default(0)
   status         UploadStatus @default(ACTIVE)
   tempStorageKey String       @unique
+  paygOperationKeyPrefix String?
   expiresAt      DateTime
   workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -320,6 +524,577 @@ model UploadChunk {
   createdAt       DateTime      @default(now())
 
   @@unique([uploadSessionId, chunkIndex])
+}
+
+model Plan {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  description String?
+  isPublic    Boolean       @default(true)
+  isActive    Boolean       @default(true)
+  sortOrder   Int           @default(0)
+  versions    PlanVersion[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model PlanVersion {
+  id                  String                  @id @default(cuid())
+  planId              String
+  version             Int
+  effectiveAt         DateTime
+  publishedAt         DateTime?
+  retiredAt           DateTime?
+  plan                Plan                    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  prices              PlanPrice[]
+  offers              PlanOffer[]
+  entitlements        PlanEntitlement[]
+  subscriptions       WorkspaceSubscription[]
+  subscriptionChanges SubscriptionChange[]
+  billingInvoices     BillingInvoice[]
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@unique([planId, version])
+  @@index([planId, publishedAt, retiredAt])
+}
+
+model PlanPrice {
+  id            String          @id @default(cuid())
+  planVersionId String
+  currency      BillingCurrency
+  interval      BillingInterval
+  amountMinor   BigInt
+  isActive      Boolean         @default(true)
+  planVersion   PlanVersion     @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([planVersionId, currency, interval])
+  @@index([currency, interval, isActive])
+}
+
+model PlanOffer {
+  id            String           @id @default(cuid())
+  planVersionId String
+  currency      BillingCurrency
+  term          SubscriptionTerm
+  amountMinor   BigInt
+  isPublic      Boolean          @default(true)
+  isActive      Boolean          @default(true)
+  planVersion   PlanVersion      @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([planVersionId, currency, term])
+  @@index([currency, term, isActive, isPublic])
+}
+
+model PlanEntitlement {
+  id              String      @id @default(cuid())
+  planVersionId   String
+  metric          UsageMetric
+  includedAmount  BigInt
+  hardLimit       Boolean     @default(true)
+  overageAllowed  Boolean     @default(false)
+  overageUnit     BigInt?
+  overageBdtMinor BigInt?
+  overageUsdMinor BigInt?
+  planVersion     PlanVersion @relation(fields: [planVersionId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([planVersionId, metric])
+  @@index([metric])
+}
+
+model WorkspaceSubscription {
+  id                String             @id @default(cuid())
+  workspaceId       String             @unique
+  planVersionId     String
+  status            SubscriptionStatus @default(ACTIVE)
+  currency          BillingCurrency    @default(BDT)
+  interval          BillingInterval    @default(MONTHLY)
+  revenueModel      RevenueModel       @default(SUBSCRIPTION)
+  subscriptionTerm  SubscriptionTerm   @default(FREE)
+  commitmentEndsAt  DateTime?
+  periodStart       DateTime
+  periodEnd         DateTime
+  trialEndsAt       DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  graceEndsAt       DateTime?
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planVersion       PlanVersion        @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([planVersionId, status])
+  @@index([periodEnd, status])
+  @@index([revenueModel, subscriptionTerm])
+}
+
+model BillingPreference {
+  id                String          @id @default(cuid())
+  workspaceId       String          @unique
+  preferredCurrency BillingCurrency @default(BDT)
+  preferredInterval BillingInterval @default(MONTHLY)
+  revenueModel      RevenueModel       @default(SUBSCRIPTION)
+  subscriptionTerm  SubscriptionTerm   @default(FREE)
+  billingEmail      String?
+  countryCode       String?
+  taxId             String?
+  companyName       String?
+  billingPhone      String?
+  billingAddress    Json?
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([revenueModel, subscriptionTerm])
+}
+
+model UsageEvent {
+  id             String      @id @default(cuid())
+  workspaceId    String
+  metric         UsageMetric
+  quantity       BigInt
+  idempotencyKey String      @unique
+  sourceType     String
+  sourceId       String?
+  metadata       Json?
+  occurredAt     DateTime    @default(now())
+  workspace      Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  paygLedgerEntry PaygLedgerEntry?
+  createdAt      DateTime    @default(now())
+
+  @@index([workspaceId, metric, occurredAt])
+  @@index([sourceType, sourceId])
+}
+
+model UsageAggregate {
+  id          String      @id @default(cuid())
+  workspaceId String
+  metric      UsageMetric
+  periodStart DateTime
+  periodEnd   DateTime
+  quantity    BigInt      @default(0)
+  lastEventAt DateTime?
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([workspaceId, metric, periodStart, periodEnd])
+  @@index([workspaceId, periodStart, periodEnd])
+}
+
+model QuotaReservation {
+  id          String                 @id @default(cuid())
+  workspaceId String
+  metric      UsageMetric
+  quantity    BigInt
+  sourceType  String
+  sourceId    String
+  status      QuotaReservationStatus @default(ACTIVE)
+  expiresAt   DateTime
+  committedAt DateTime?
+  releasedAt  DateTime?
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@unique([sourceId, metric])
+  @@index([workspaceId, metric, status])
+  @@index([expiresAt, status])
+}
+
+model UsageAlert {
+  id                 String                @id @default(cuid())
+  workspaceId        String
+  metric             UsageMetric
+  threshold          Int
+  periodStart        DateTime
+  periodEnd          DateTime
+  triggeredAt        DateTime              @default(now())
+  acknowledgedAt     DateTime?
+  emailStatus        UsageAlertEmailStatus @default(PENDING)
+  emailRecipient     String?
+  emailSentAt        DateTime?
+  lastEmailAttemptAt DateTime?
+  emailLastError     String?
+  workspace          Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([workspaceId, metric, threshold, periodStart, periodEnd])
+  @@index([workspaceId, acknowledgedAt, triggeredAt])
+  @@index([emailStatus, lastEmailAttemptAt])
+}
+
+model SubscriptionChange {
+  id                     String                   @id @default(cuid())
+  workspaceId            String
+  requestedById          String
+  requestedPlanVersionId String
+  currency               BillingCurrency
+  interval               BillingInterval
+  revenueModel           RevenueModel       @default(SUBSCRIPTION)
+  subscriptionTerm       SubscriptionTerm   @default(THREE_MONTHS)
+  status                 SubscriptionChangeStatus @default(PENDING)
+  effectiveAt            DateTime?
+  reviewedById           String?
+  reviewedAt             DateTime?
+  note                   String?
+  workspace              Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  requestedBy            User                     @relation("SubscriptionChangeRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy             User?                    @relation("SubscriptionChangeReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  requestedPlanVersion   PlanVersion              @relation(fields: [requestedPlanVersionId], references: [id], onDelete: Restrict)
+  invoice                BillingInvoice?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+
+  @@index([workspaceId, status, createdAt])
+  @@index([requestedPlanVersionId, status])
+}
+
+
+model BillingInvoice {
+  id                   String              @id @default(cuid())
+  number               String              @unique
+  kind                 InvoiceKind         @default(PLAN_CHANGE)
+  renewalKey           String?             @unique
+  workspaceId          String
+  subscriptionChangeId String?             @unique
+  requestedById        String
+  planVersionId        String
+  currency             BillingCurrency
+  interval             BillingInterval
+  revenueModel         RevenueModel       @default(SUBSCRIPTION)
+  subscriptionTerm     SubscriptionTerm   @default(THREE_MONTHS)
+  amountMinor          BigInt
+  status               InvoiceStatus       @default(OPEN)
+  periodStart          DateTime
+  periodEnd            DateTime
+  dueAt                DateTime
+  paidAt               DateTime?
+  voidedAt             DateTime?
+  snapshot             Json
+  workspace            Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subscriptionChange   SubscriptionChange? @relation(fields: [subscriptionChangeId], references: [id], onDelete: Restrict)
+  requestedBy          User                @relation("BillingInvoiceRequestedBy", fields: [requestedById], references: [id], onDelete: Restrict)
+  planVersion          PlanVersion         @relation(fields: [planVersionId], references: [id], onDelete: Restrict)
+  payments             PaymentAttempt[]
+  walletTransactions   WalletTransaction[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([workspaceId, status, createdAt])
+  @@index([workspaceId, kind, periodStart])
+  @@index([dueAt, status])
+}
+
+model PaymentAttempt {
+  id                    String          @id @default(cuid())
+  invoiceId             String
+  method                PaymentMethod
+  status                PaymentStatus   @default(PENDING)
+  amountMinor           BigInt
+  currency              BillingCurrency
+  providerTransactionId String?         @unique
+  gatewaySessionId      String?
+  validationId          String?
+  bankTransactionId     String?
+  riskLevel             Int?
+  riskTitle             String?
+  failureReason         String?
+  rawInitiation         Json?
+  rawNotification       Json?
+  rawValidation         Json?
+  initiatedAt           DateTime?
+  completedAt           DateTime?
+  invoice               BillingInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  manualSubmission      ManualPaymentSubmission?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([invoiceId, status, createdAt])
+  @@index([method, status, createdAt])
+}
+
+model ManualPaymentAccount {
+  id            String                @id @default(cuid())
+  currency      BillingCurrency
+  channel       ManualPaymentChannel
+  label         String
+  accountName   String
+  accountNumber String
+  bankName      String?
+  branchName    String?
+  routingNumber String?
+  instructions  String?
+  isActive      Boolean               @default(true)
+  sortOrder     Int                   @default(0)
+  submissions   ManualPaymentSubmission[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([currency, isActive, sortOrder])
+}
+
+model ManualPaymentSubmission {
+  id                   String               @id @default(cuid())
+  paymentAttemptId     String               @unique
+  accountId            String
+  transactionReference String
+  senderAccount        String?
+  senderName           String?
+  paidAt               DateTime
+  note                 String?
+  proofStorageKey      String?
+  proofFilename        String?
+  proofContentType     String?
+  proofSizeBytes       BigInt?
+  reviewedById         String?
+  reviewedAt           DateTime?
+  rejectionReason      String?
+  paymentAttempt       PaymentAttempt       @relation(fields: [paymentAttemptId], references: [id], onDelete: Cascade)
+  account              ManualPaymentAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  reviewedBy           User?                @relation("ManualPaymentReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@unique([accountId, transactionReference])
+  @@index([reviewedAt, createdAt])
+}
+
+model PaymentWebhookEvent {
+  id              String   @id @default(cuid())
+  provider        String
+  eventKey        String   @unique
+  transactionId   String?
+  payload         Json
+  processedAt     DateTime?
+  processingError String?
+  createdAt       DateTime @default(now())
+
+  @@index([provider, transactionId, createdAt])
+}
+
+
+model BillingProviderCustomer {
+  id                 String            @id @default(cuid())
+  workspaceId        String
+  provider           CardVaultProvider
+  providerCustomerId String
+  workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  paymentMethods     SavedPaymentMethod[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@unique([workspaceId, provider])
+  @@unique([provider, providerCustomerId])
+}
+
+model SavedPaymentMethod {
+  id                      String                   @id @default(cuid())
+  workspaceId             String
+  providerCustomerRecordId String
+  provider                CardVaultProvider
+  providerPaymentMethodId String                   @unique
+  brand                   String?
+  last4                   String?
+  expMonth                Int?
+  expYear                 Int?
+  cardholderName          String?
+  billingEmail            String?
+  status                  SavedPaymentMethodStatus @default(PENDING)
+  isDefault               Boolean                  @default(false)
+  consentVersion          String
+  consentAt               DateTime
+  removedAt               DateTime?
+  workspace               Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  providerCustomer        BillingProviderCustomer  @relation(fields: [providerCustomerRecordId], references: [id], onDelete: Cascade)
+  defaultForPolicies      PaygPolicy[]              @relation("PaygDefaultPaymentMethod")
+  chargeAttempts          PaygChargeAttempt[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@index([workspaceId, status, isDefault])
+}
+
+model PaygPolicy {
+  id                       String           @id @default(cuid())
+  workspaceId              String           @unique
+  status                   PaygPolicyStatus @default(DISABLED)
+  currency                 BillingCurrency
+  monthlySpendCapMinor     BigInt
+  chargeThresholdMinor     BigInt
+  defaultPaymentMethodId   String?
+  consentVersion           String
+  consentAt                DateTime?
+  pausedAt                 DateTime?
+  pauseReason              String?
+  workspace                Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  defaultPaymentMethod     SavedPaymentMethod? @relation("PaygDefaultPaymentMethod", fields: [defaultPaymentMethodId], references: [id], onDelete: SetNull)
+  metrics                  PaygMetricSetting[]
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+
+  @@index([status, currency])
+}
+
+model PaygMetricSetting {
+  id                  String      @id @default(cuid())
+  policyId            String
+  metric              UsageMetric
+  enabled             Boolean     @default(false)
+  metricSpendCapMinor BigInt?
+  policy              PaygPolicy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([policyId, metric])
+  @@index([metric, enabled])
+}
+
+model PaygAuthorization {
+  id                   String                  @id @default(cuid())
+  workspaceId          String
+  metric               UsageMetric
+  operationKey         String                  @unique
+  requestedQuantity    BigInt
+  estimatedAmountMinor BigInt
+  currency             BillingCurrency
+  periodStart          DateTime
+  periodEnd            DateTime
+  status               PaygAuthorizationStatus @default(ACTIVE)
+  expiresAt            DateTime
+  committedAt          DateTime?
+  releasedAt           DateTime?
+  workspace            Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  @@index([workspaceId, metric, status])
+  @@index([expiresAt, status])
+}
+
+model PaygLedgerEntry {
+  id               String           @id @default(cuid())
+  workspaceId      String
+  usageEventId     String           @unique
+  metric           UsageMetric
+  periodStart      DateTime
+  periodEnd        DateTime
+  quantity         BigInt
+  billableUnits    BigInt
+  unitSize         BigInt
+  unitPriceMinor   BigInt
+  amountMinor      BigInt
+  currency         BillingCurrency
+  status           PaygLedgerStatus @default(PENDING)
+  chargeAttemptId  String?
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  usageEvent       UsageEvent       @relation(fields: [usageEventId], references: [id], onDelete: Cascade)
+  chargeAttempt    PaygChargeAttempt? @relation(fields: [chargeAttemptId], references: [id], onDelete: SetNull)
+  walletTransaction WalletTransaction?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([workspaceId, status, periodStart])
+  @@index([chargeAttemptId])
+}
+
+model PaygChargeAttempt {
+  id                      String           @id @default(cuid())
+  workspaceId             String
+  paymentMethodId         String
+  currency                BillingCurrency
+  amountMinor             BigInt
+  status                  PaygChargeStatus @default(PENDING)
+  providerPaymentIntentId String?          @unique
+  failureCode             String?
+  failureReason           String?
+  initiatedAt             DateTime?
+  completedAt             DateTime?
+  periodStart             DateTime
+  periodEnd               DateTime
+  workspace               Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  paymentMethod           SavedPaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Restrict)
+  entries                 PaygLedgerEntry[]
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  @@index([workspaceId, status, createdAt])
+}
+
+model PrepaidWallet {
+  id                       String          @id @default(cuid())
+  workspaceId              String          @unique
+  currency                 BillingCurrency
+  status                   WalletStatus    @default(ACTIVE)
+  balanceMinor             BigInt          @default(0)
+  reservedMinor            BigInt          @default(0)
+  lowBalanceThresholdMinor BigInt          @default(0)
+  workspace                Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  transactions             WalletTransaction[]
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+
+  @@index([currency, status])
+}
+
+model WalletTransaction {
+  id                String                @id @default(cuid())
+  walletId          String
+  workspaceId       String
+  kind              WalletTransactionKind
+  amountMinor       BigInt
+  balanceAfterMinor BigInt
+  currency          BillingCurrency
+  idempotencyKey    String                @unique
+  invoiceId         String?
+  paygLedgerEntryId String?               @unique
+  reference         String?
+  metadata          Json?
+  createdById       String?
+  wallet            PrepaidWallet         @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  workspace         Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invoice           BillingInvoice?       @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  paygLedgerEntry   PaygLedgerEntry?      @relation(fields: [paygLedgerEntryId], references: [id], onDelete: SetNull)
+  createdBy         User?                 @relation("WalletTransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt         DateTime              @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([walletId, kind, createdAt])
+}
+
+model EnterpriseInquiry {
+  id                       String                  @id @default(cuid())
+  workspaceId              String
+  createdById              String
+  status                   EnterpriseInquiryStatus @default(NEW)
+  companyName              String
+  contactName              String
+  email                    String
+  phone                    String?
+  expectedStorageBytes     BigInt?
+  expectedDeliveryBytes    BigInt?
+  expectedMonthlyRequests  BigInt?
+  teamSize                 Int?
+  message                  String?
+  assignedToId             String?
+  adminNotes               String?
+  contactedAt              DateTime?
+  closedAt                 DateTime?
+  workspace                Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy                User                    @relation("EnterpriseInquiryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo               User?                   @relation("EnterpriseInquiryAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+
+  @@index([status, createdAt])
+  @@index([workspaceId, createdAt])
 }
 
 model AuditLog {

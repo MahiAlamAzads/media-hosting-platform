@@ -2,6 +2,8 @@ import path from "node:path";
 import type { Request, Response } from "express";
 import type { DeliveryService } from "./delivery.service.js";
 import { createStorageReadStream } from "../../infrastructure/storage.js";
+import { recordUsage } from "../billing/usage.service.js";
+import { assertMeteredUsageAllowed } from "../billing/quota.service.js";
 
 function contentDisposition(
   disposition: "inline" | "attachment",
@@ -27,6 +29,13 @@ export class DeliveryController {
       rangeHeader: req.get("range")
     });
 
+    await assertMeteredUsageAllowed(
+      descriptor.asset.workspaceId,
+      "DELIVERY_BYTES",
+      BigInt(descriptor.contentLength),
+      `delivery:${req.id}`
+    );
+
     const contentType =
       descriptor.asset.detectedContentType ??
       descriptor.asset.contentType;
@@ -48,6 +57,28 @@ export class DeliveryController {
     if (descriptor.contentRange) {
       res.setHeader("Content-Range", descriptor.contentRange);
     }
+
+    res.once("finish", () => {
+      void recordUsage({
+        workspaceId: descriptor.asset.workspaceId,
+        metric: "DELIVERY_BYTES",
+        quantity: BigInt(descriptor.contentLength),
+        idempotencyKey: `delivery:${req.id}`,
+        paygOperationKey: `delivery:${req.id}`,
+        sourceType: "SIGNED_DELIVERY",
+        sourceId: descriptor.asset.id,
+        metadata: {
+          statusCode: descriptor.statusCode,
+          range: descriptor.contentRange ?? null,
+          disposition: descriptor.disposition
+        }
+      }).catch(error => {
+        req.log.error(
+          { err: error },
+          "failed to record delivery usage"
+        );
+      });
+    });
 
     const stream = createStorageReadStream(
       descriptor.asset.storageKey,

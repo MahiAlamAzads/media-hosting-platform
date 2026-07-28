@@ -5,6 +5,8 @@ import { prisma } from "@media/database";
 import { env } from "../config/env.js";
 import { hashApiKeySecret, parseApiKey } from "../shared/api-key.js";
 import { AppError } from "../shared/http.js";
+import { assertMeteredUsageAllowed } from "../modules/billing/quota.service.js";
+import { shouldRunThrottled } from "../infrastructure/cache.js";
 
 type AccessClaims = {
   sub: string;
@@ -79,9 +81,16 @@ async function authenticateApiKey(rawKey: string, req: Request): Promise<boolean
     scopes: record.scopes
   };
 
-  void prisma.apiKey.update({
-    where: { id: record.id },
-    data: { lastUsedAt: new Date(), lastUsedIp: req.ip }
+  void shouldRunThrottled(
+    "api-key-touch",
+    record.id,
+    env.REDIS_AUTH_TOUCH_TTL_SECONDS
+  ).then(shouldTouch => {
+    if (!shouldTouch) return;
+    return prisma.apiKey.update({
+      where: { id: record.id },
+      data: { lastUsedAt: new Date(), lastUsedIp: req.ip }
+    });
   }).catch(() => undefined);
 
   return true;
@@ -142,9 +151,16 @@ async function authenticateUserToken(token: string, req: Request): Promise<void>
     scopes: ["*"]
   };
 
-  void prisma.session.update({
-    where: { id: session.id },
-    data: { lastUsedAt: new Date() }
+  void shouldRunThrottled(
+    "session-touch",
+    session.id,
+    env.REDIS_AUTH_TOUCH_TTL_SECONDS
+  ).then(shouldTouch => {
+    if (!shouldTouch) return;
+    return prisma.session.update({
+      where: { id: session.id },
+      data: { lastUsedAt: new Date() }
+    });
   }).catch(() => undefined);
 }
 
@@ -170,6 +186,24 @@ export async function authenticate(
     } else {
       await authenticateUserToken(token, req);
     }
+
+    const quotaExempt =
+      req.baseUrl === "/api/v1/billing" ||
+      req.baseUrl === "/api/v1/payments" ||
+      req.baseUrl === "/api/v1/account" ||
+      req.baseUrl === "/api/v1/security" ||
+      req.baseUrl === "/api/v1/admin" ||
+      req.baseUrl === "/api/v1/docs";
+
+    if (!quotaExempt && req.auth) {
+      await assertMeteredUsageAllowed(
+        req.auth.workspaceId,
+        "API_REQUESTS",
+        1n,
+        `api:${req.id}`
+      );
+    }
+
     next();
   } catch (error) {
     next(

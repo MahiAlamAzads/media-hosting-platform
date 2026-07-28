@@ -14,6 +14,7 @@ export async function sendSecurityEmail(input: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
 }): Promise<void> {
   await transport.sendMail({
     from: { name: env.SMTP_FROM_NAME, address: env.SMTP_FROM_EMAIL },

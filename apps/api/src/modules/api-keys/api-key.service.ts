@@ -27,7 +27,7 @@ export class ApiKeyService {
     const parsed = createSchema.parse(input.body);
     const material = createApiKeyMaterial();
 
-    const record = await this.repository.create({
+    const record = await this.repository.createWithinLimit({
       workspaceId: input.workspaceId,
       createdById: input.userId,
       name: parsed.name,

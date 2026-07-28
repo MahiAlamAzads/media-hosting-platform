@@ -7,7 +7,11 @@ async function cleanupOne(uploadId: string): Promise<boolean> {
     where: { id: uploadId }
   });
 
-  if (!session || session.status !== "ACTIVE" || session.expiresAt > new Date()) {
+  if (
+    !session ||
+    session.status !== "ACTIVE" ||
+    session.expiresAt > new Date()
+  ) {
     return false;
   }
 
@@ -17,9 +21,7 @@ async function cleanupOne(uploadId: string): Promise<boolean> {
       status: "ACTIVE",
       expiresAt: { lte: new Date() }
     },
-    data: {
-      status: "EXPIRED"
-    }
+    data: { status: "EXPIRED" }
   });
 
   if (claimed.count !== 1) return false;
@@ -29,25 +31,71 @@ async function cleanupOne(uploadId: string): Promise<boolean> {
     select: { storageKey: true }
   });
 
-  await prisma.$transaction([
-    prisma.workspace.update({
-      where: { id: session.workspaceId },
+  await prisma.$transaction(async tx => {
+    const storage = await tx.quotaReservation.aggregate({
+      where: {
+        sourceId: session.id,
+        workspaceId: session.workspaceId,
+        metric: "STORAGE_BYTES",
+        status: "ACTIVE"
+      },
+      _sum: { quantity: true }
+    });
+
+    const bytes = storage._sum.quantity ?? 0n;
+
+    if (bytes > 0n) {
+      await tx.$executeRaw`
+        UPDATE "Workspace"
+        SET "storageReservedBytes" = GREATEST(
+          "storageReservedBytes" - ${bytes},
+          0
+        )
+        WHERE "id" = ${session.workspaceId}
+      `;
+    }
+
+    await tx.quotaReservation.updateMany({
+      where: {
+        sourceId: session.id,
+        workspaceId: session.workspaceId,
+        status: "ACTIVE"
+      },
       data: {
-        storageReservedBytes: {
-          decrement: session.expectedBytes
-        }
+        status: "EXPIRED",
+        releasedAt: new Date()
       }
-    }),
-    prisma.mediaAsset.update({
-      where: { id: session.mediaAssetId },
+    });
+
+    if (session.paygOperationKeyPrefix) {
+      await tx.paygAuthorization.updateMany({
+        where: {
+          workspaceId: session.workspaceId,
+          operationKey: {
+            startsWith: session.paygOperationKeyPrefix
+          },
+          status: "ACTIVE"
+        },
+        data: {
+          status: "EXPIRED",
+          releasedAt: new Date()
+        }
+      });
+    }
+
+    await tx.mediaAsset.updateMany({
+      where: {
+        id: session.mediaAssetId,
+        status: { in: ["UPLOADING", "PROCESSING"] }
+      },
       data: {
         status: "FAILED",
         deletedAt: new Date()
       }
-    })
-  ]);
+    });
+  });
 
-  await Promise.all(
+  await Promise.allSettled(
     chunks.map(chunk => removeStorageFile(chunk.storageKey))
   );
 

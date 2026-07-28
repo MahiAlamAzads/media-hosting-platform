@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "requiredLayers": [
+    "route",
+    "controller",
+    "service",
+    "repository",
+    "validation",
+    "module"
+  ],
+  "modules": [
+    {
+      "name": "account",
+      "directory": "account",
+      "stem": "account",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "account-public",
+      "directory": "account",
+      "stem": "account-public",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "admin-console",
+      "directory": "admin",
+      "stem": "admin-console",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "admin-payments",
+      "directory": "admin",
+      "stem": "admin-payments",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "admin-plans",
+      "directory": "admin",
+      "stem": "admin-plans",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "api-keys",
+      "directory": "api-keys",
+      "stem": "api-key",
+      "mode": "native-oop"
+    },
+    {
+      "name": "audit",
+      "directory": "audit",
+      "stem": "audit",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "auth",
+      "directory": "auth",
+      "stem": "auth",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "billing",
+      "directory": "billing",
+      "stem": "billing",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "delivery",
+      "directory": "delivery",
+      "stem": "delivery",
+      "mode": "native-oop"
+    },
+    {
+      "name": "docs",
+      "directory": "docs",
+      "stem": "docs",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "folders",
+      "directory": "folders",
+      "stem": "folders",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "media",
+      "directory": "media",
+      "stem": "media",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "payg",
+      "directory": "billing",
+      "stem": "payg",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "payment",
+      "directory": "payments",
+      "stem": "payment",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "payment-callback",
+      "directory": "payments",
+      "stem": "payment-callback",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "pricing",
+      "directory": "pricing",
+      "stem": "pricing",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "public-media",
+      "directory": "public",
+      "stem": "public-media",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "revenue",
+      "directory": "billing",
+      "stem": "revenue",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "security",
+      "directory": "security",
+      "stem": "security",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "stripe-callback",
+      "directory": "payments",
+      "stem": "stripe-callback",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "uploads",
+      "directory": "uploads",
+      "stem": "uploads",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "usage",
+      "directory": "usage",
+      "stem": "usage",
+      "mode": "compatibility-facade"
+    },
+    {
+      "name": "variants",
+      "directory": "variants",
+      "stem": "variants",
+      "mode": "compatibility-facade"
+    }
+  ]
+}

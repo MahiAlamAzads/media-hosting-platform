@@ -3,8 +3,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
-    setupFiles: ["./src/test/setup-env.ts"],
+    include: ["tests/**/*.test.ts"],
+    setupFiles: ["./tests/setup/setup-env.ts"],
     clearMocks: true,
     restoreMocks: true,
     mockReset: true,
@@ -20,8 +20,7 @@ export default defineConfig({
         "src/infrastructure/**/*.ts"
       ],
       exclude: [
-        "src/**/*.test.ts",
-        "src/test/**",
+        "tests/**",
         "src/server.ts",
         "src/types.d.ts"
       ],

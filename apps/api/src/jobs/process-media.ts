@@ -1,46 +1,24 @@
 import { prisma } from "@media/database";
 import { ImageProcessor } from "../modules/processing/image-processor.js";
+import { findPendingImageAssetIds } from "../modules/processing/image-optimization-scheduler.js";
 
 async function main(): Promise<void> {
   const processor = new ImageProcessor();
-
-  const assets = await prisma.mediaAsset.findMany({
-    where: {
-      detectedMediaType: "IMAGE",
-      status: "READY",
-      deletedAt: null,
-      variants: {
-        none: {}
-      }
-    },
-    orderBy: {
-      createdAt: "asc"
-    },
-    take: 25,
-    select: {
-      id: true
-    }
-  });
-
+  const assetIds = await findPendingImageAssetIds(25);
   let processed = 0;
   let failed = 0;
 
-  for (const asset of assets) {
+  for (const assetId of assetIds) {
     try {
-      await processor.process(asset.id);
+      await processor.process(assetId);
       processed += 1;
     } catch (error) {
       failed += 1;
-      console.error(
-        `Failed to process ${asset.id}:`,
-        error
-      );
+      console.error(`Failed to process ${assetId}:`, error);
 
-      await prisma.mediaAsset.update({
-        where: { id: asset.id },
-        data: {
-          status: "FAILED"
-        }
+      await prisma.mediaAsset.updateMany({
+        where: { id: assetId, status: "PROCESSING" },
+        data: { status: "READY" }
       }).catch(() => undefined);
     }
   }
