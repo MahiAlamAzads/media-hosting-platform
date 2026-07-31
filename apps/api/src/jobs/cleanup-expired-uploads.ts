@@ -4,7 +4,7 @@ import { removeStorageFile } from "../infrastructure/storage.js";
 
 async function cleanupOne(uploadId: string): Promise<boolean> {
   const session = await prisma.uploadSession.findUnique({
-    where: { id: uploadId }
+    where: { id: uploadId },
   });
 
   if (
@@ -19,27 +19,27 @@ async function cleanupOne(uploadId: string): Promise<boolean> {
     where: {
       id: session.id,
       status: "ACTIVE",
-      expiresAt: { lte: new Date() }
+      expiresAt: { lte: new Date() },
     },
-    data: { status: "EXPIRED" }
+    data: { status: "EXPIRED" },
   });
 
   if (claimed.count !== 1) return false;
 
   const chunks = await prisma.uploadChunk.findMany({
     where: { uploadSessionId: session.id },
-    select: { storageKey: true }
+    select: { storageKey: true },
   });
 
-  await prisma.$transaction(async tx => {
+  await prisma.$transaction(async (tx) => {
     const storage = await tx.quotaReservation.aggregate({
       where: {
         sourceId: session.id,
         workspaceId: session.workspaceId,
         metric: "STORAGE_BYTES",
-        status: "ACTIVE"
+        status: "ACTIVE",
       },
-      _sum: { quantity: true }
+      _sum: { quantity: true },
     });
 
     const bytes = storage._sum.quantity ?? 0n;
@@ -59,12 +59,12 @@ async function cleanupOne(uploadId: string): Promise<boolean> {
       where: {
         sourceId: session.id,
         workspaceId: session.workspaceId,
-        status: "ACTIVE"
+        status: "ACTIVE",
       },
       data: {
         status: "EXPIRED",
-        releasedAt: new Date()
-      }
+        releasedAt: new Date(),
+      },
     });
 
     if (session.paygOperationKeyPrefix) {
@@ -72,31 +72,31 @@ async function cleanupOne(uploadId: string): Promise<boolean> {
         where: {
           workspaceId: session.workspaceId,
           operationKey: {
-            startsWith: session.paygOperationKeyPrefix
+            startsWith: session.paygOperationKeyPrefix,
           },
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
         data: {
           status: "EXPIRED",
-          releasedAt: new Date()
-        }
+          releasedAt: new Date(),
+        },
       });
     }
 
     await tx.mediaAsset.updateMany({
       where: {
         id: session.mediaAssetId,
-        status: { in: ["UPLOADING", "PROCESSING"] }
+        status: { in: ["UPLOADING", "PROCESSING"] },
       },
       data: {
         status: "FAILED",
-        deletedAt: new Date()
-      }
+        deletedAt: new Date(),
+      },
     });
   });
 
   await Promise.allSettled(
-    chunks.map(chunk => removeStorageFile(chunk.storageKey))
+    chunks.map((chunk) => removeStorageFile(chunk.storageKey)),
   );
 
   return true;
@@ -106,11 +106,11 @@ async function main(): Promise<void> {
   const expired = await prisma.uploadSession.findMany({
     where: {
       status: "ACTIVE",
-      expiresAt: { lte: new Date() }
+      expiresAt: { lte: new Date() },
     },
     orderBy: { expiresAt: "asc" },
     take: 100,
-    select: { id: true }
+    select: { id: true },
   });
 
   let cleaned = 0;

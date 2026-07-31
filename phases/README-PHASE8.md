@@ -16,12 +16,12 @@ This phase keeps the Bootstrap `main` frontend and adds a database-driven BDT/US
 
 ## Seeded plans
 
-| Plan | BDT monthly | BDT yearly | USD monthly | USD yearly |
-|---|---:|---:|---:|---:|
-| Free | ৳0 | ৳0 | $0 | $0 |
-| Starter | ৳990 | ৳9,900 | $9 | $90 |
-| Pro | ৳2,990 | ৳29,900 | $29 | $290 |
-| Business | ৳9,900 | ৳99,000 | $99 | $990 |
+| Plan     | BDT monthly | BDT yearly | USD monthly | USD yearly |
+| -------- | ----------: | ---------: | ----------: | ---------: |
+| Free     |          ৳0 |         ৳0 |          $0 |         $0 |
+| Starter  |        ৳990 |     ৳9,900 |          $9 |        $90 |
+| Pro      |      ৳2,990 |    ৳29,900 |         $29 |       $290 |
+| Business |      ৳9,900 |    ৳99,000 |         $99 |       $990 |
 
 ## Database additions
 

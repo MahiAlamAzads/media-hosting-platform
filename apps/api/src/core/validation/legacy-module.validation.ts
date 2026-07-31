@@ -1,1 +1,3 @@
-export class LegacyModuleValidation { constructor(readonly moduleName: string) {} }
+export class LegacyModuleValidation {
+  constructor(readonly moduleName: string) {}
+}

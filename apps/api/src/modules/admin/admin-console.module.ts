@@ -4,9 +4,13 @@ import { AdminConsoleHttpRepository } from "./admin-console.facade.repository.js
 import { AdminConsoleHttpRoute } from "./admin-console.facade.route.js";
 import { AdminConsoleHttpService } from "./admin-console.facade.service.js";
 import { AdminConsoleHttpValidation } from "./admin-console.facade.validation.js";
-const repository=new AdminConsoleHttpRepository();
-const validation=new AdminConsoleHttpValidation();
-const service=new AdminConsoleHttpService(repository,validation);
-const controller=new AdminConsoleHttpController(service);
-const route=new AdminConsoleHttpRoute(controller);
-export const adminConsoleModule: ApiModuleDescriptor={name:"admin-console",mountPath:"/api/v1/admin",router:route.router};
+const repository = new AdminConsoleHttpRepository();
+const validation = new AdminConsoleHttpValidation();
+const service = new AdminConsoleHttpService(repository, validation);
+const controller = new AdminConsoleHttpController(service);
+const route = new AdminConsoleHttpRoute(controller);
+export const adminConsoleModule: ApiModuleDescriptor = {
+  name: "admin-console",
+  mountPath: "/api/v1/admin",
+  router: route.router,
+};

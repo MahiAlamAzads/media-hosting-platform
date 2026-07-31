@@ -27,7 +27,8 @@ export const aiAgentSkills: AiAgentSkill[] = [
   {
     id: "universal",
     title: "Universal integration skill",
-    description: "Use with any coding agent before asking it to integrate uploads and delivery.",
+    description:
+      "Use with any coding agent before asking it to integrate uploads and delivery.",
     filename: "MEDIA_PLATFORM_SKILL.md",
     content: `---
 name: media-platform-integration
@@ -83,12 +84,13 @@ PRIVATE is for protected user files, invoices and internal media. The completed 
 - A brief setup section listing environment variables and API-key scopes
 - Tests or focused test cases for PUBLIC upload, PRIVATE upload, upload failure cleanup and signed private delivery
 
-Before writing code, inspect the repository and use its package manager, framework conventions, validation library and error style. Do not invent undocumented endpoints or response fields.`
+Before writing code, inspect the repository and use its package manager, framework conventions, validation library and error style. Do not invent undocumented endpoints or response fields.`,
   },
   {
     id: "nextjs",
     title: "Next.js App Router skill",
-    description: "Creates a server-only Route Handler and reusable typed client.",
+    description:
+      "Creates a server-only Route Handler and reusable typed client.",
     filename: "MEDIA_PLATFORM_NEXTJS_SKILL.md",
     content: `---
 name: media-platform-nextjs
@@ -127,12 +129,13 @@ POST /api/v1/uploads -> PUT chunks -> POST complete. Use the returned chunkSizeB
 5. Tests for PUBLIC and PRIVATE behavior.
 6. Setup notes for MEDIA_PLATFORM_API_URL, MEDIA_PLATFORM_API_KEY and scopes uploads:write media:read.
 
-Inspect the current repository before editing. Preserve its TypeScript strictness, linting and error conventions.`
+Inspect the current repository before editing. Preserve its TypeScript strictness, linting and error conventions.`,
   },
   {
     id: "node",
     title: "Node, Express or Fastify skill",
-    description: "Builds a reusable Node client plus a multipart server endpoint.",
+    description:
+      "Builds a reusable Node client plus a multipart server endpoint.",
     filename: "MEDIA_PLATFORM_NODE_SKILL.md",
     content: `---
 name: media-platform-node
@@ -184,12 +187,13 @@ For PRIVATE media, imgUrl and fileUrl remain null; deliveryUrl is created server
 - Focused tests
 - Environment and API-scope documentation
 
-Do not add browser-side API-key usage or internal/admin endpoint calls.`
+Do not add browser-side API-key usage or internal/admin endpoint calls.`,
   },
   {
     id: "php",
     title: "PHP skill",
-    description: "Creates a cURL client and safe upload controller/service for PHP projects.",
+    description:
+      "Creates a cURL client and safe upload controller/service for PHP projects.",
     filename: "MEDIA_PLATFORM_PHP_SKILL.md",
     content: `---
 name: media-platform-php
@@ -224,6 +228,6 @@ ${sharedRules}
 5. Cleanup and abort logic
 6. Setup notes and test examples
 
-Use the repository's existing autoloading, namespaces, framework response helpers and validation style.`
-  }
+Use the repository's existing autoloading, namespaces, framework response helpers and validation style.`,
+  },
 ];

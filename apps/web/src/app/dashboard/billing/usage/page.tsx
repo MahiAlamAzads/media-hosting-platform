@@ -8,7 +8,7 @@ import {
   formatMetricValue,
   metricLabels,
   progressClass,
-  type UsageMetricName
+  type UsageMetricName,
 } from "@/lib/billing-format";
 
 type Metric = {
@@ -48,8 +48,8 @@ export default function BillingUsagePage() {
 
   useEffect(() => {
     apiRequest<{ data: Usage }>("/api/v1/billing/usage")
-      .then(response => setUsage(response.data))
-      .catch(value => setError(value.message));
+      .then((response) => setUsage(response.data))
+      .catch((value) => setError(value.message));
   }, []);
 
   return (
@@ -93,7 +93,7 @@ export default function BillingUsagePage() {
                 </tr>
               </thead>
               <tbody>
-                {usage.metrics.map(metric => (
+                {usage.metrics.map((metric) => (
                   <tr key={metric.metric}>
                     <td>
                       <div className="d-flex flex-wrap align-items-center gap-2">
@@ -119,13 +119,16 @@ export default function BillingUsagePage() {
                         ) : null}
                       </div>
                       {metric.warningMessage && (
-                        <div className={`small mt-1 ${metric.blocked ? "text-danger" : "text-secondary"}`}>
+                        <div
+                          className={`small mt-1 ${metric.blocked ? "text-danger" : "text-secondary"}`}
+                        >
                           {metric.warningMessage}
                         </div>
                       )}
                       {Number(metric.reserved) > 0 && (
                         <div className="text-secondary small">
-                          {formatMetricValue(metric.metric, metric.reserved)} reserved
+                          {formatMetricValue(metric.metric, metric.reserved)}{" "}
+                          reserved
                         </div>
                       )}
                     </td>
@@ -152,7 +155,9 @@ export default function BillingUsagePage() {
                           <div className="progress usage-progress">
                             <div
                               className={`progress-bar ${progressClass(metric.percent)}`}
-                              style={{ width: `${Math.min(100, metric.percent)}%` }}
+                              style={{
+                                width: `${Math.min(100, metric.percent)}%`,
+                              }}
                             />
                           </div>
                         </>
@@ -168,15 +173,24 @@ export default function BillingUsagePage() {
                     </td>
                     <td>
                       {metric.paygEnabled ? (
-                        <a className="badge text-bg-success text-decoration-none" href="/dashboard/billing/pay-as-you-go">
+                        <a
+                          className="badge text-bg-success text-decoration-none"
+                          href="/dashboard/billing/pay-as-you-go"
+                        >
                           PAYG enabled
                         </a>
                       ) : metric.overageAllowed ? (
-                        <span className="badge text-bg-info">Overage allowed</span>
+                        <span className="badge text-bg-info">
+                          Overage allowed
+                        </span>
                       ) : metric.hardLimit ? (
-                        <span className="badge text-bg-secondary">Hard limit</span>
+                        <span className="badge text-bg-secondary">
+                          Hard limit
+                        </span>
                       ) : (
-                        <span className="badge text-bg-light border">Soft limit</span>
+                        <span className="badge text-bg-light border">
+                          Soft limit
+                        </span>
                       )}
                     </td>
                   </tr>

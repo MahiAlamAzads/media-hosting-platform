@@ -13,7 +13,7 @@ describe("Phase 6 API contracts", () => {
 
   it.each([
     ["GET", "/api/v1/variants/media/c1234567890123456789012345"],
-    ["POST", "/api/v1/variants/media/c1234567890123456789012345/process"]
+    ["POST", "/api/v1/variants/media/c1234567890123456789012345/process"],
   ])("%s %s requires authentication", async (method, route) => {
     const agent = request(app);
 

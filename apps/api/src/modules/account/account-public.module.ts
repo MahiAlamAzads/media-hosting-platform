@@ -4,9 +4,13 @@ import { AccountPublicHttpRepository } from "./account-public.facade.repository.
 import { AccountPublicHttpRoute } from "./account-public.facade.route.js";
 import { AccountPublicHttpService } from "./account-public.facade.service.js";
 import { AccountPublicHttpValidation } from "./account-public.facade.validation.js";
-const repository=new AccountPublicHttpRepository();
-const validation=new AccountPublicHttpValidation();
-const service=new AccountPublicHttpService(repository,validation);
-const controller=new AccountPublicHttpController(service);
-const route=new AccountPublicHttpRoute(controller);
-export const accountPublicModule: ApiModuleDescriptor={name:"account-public",mountPath:"/api/v1/account-public",router:route.router};
+const repository = new AccountPublicHttpRepository();
+const validation = new AccountPublicHttpValidation();
+const service = new AccountPublicHttpService(repository, validation);
+const controller = new AccountPublicHttpController(service);
+const route = new AccountPublicHttpRoute(controller);
+export const accountPublicModule: ApiModuleDescriptor = {
+  name: "account-public",
+  mountPath: "/api/v1/account-public",
+  router: route.router,
+};

@@ -4,7 +4,7 @@ import { AppError } from "../../shared/http.js";
 import type {
   BillingCurrencyName,
   EntitlementValue,
-  UsageMetricName
+  UsageMetricName,
 } from "./billing.types.js";
 
 export const paygEligibleMetrics = [
@@ -14,11 +14,10 @@ export const paygEligibleMetrics = [
   "API_REQUESTS",
   "IMAGE_TRANSFORMATIONS",
   "VIDEO_PROCESSING_SECONDS",
-  "PROCESSING_CPU_MILLISECONDS"
+  "PROCESSING_CPU_MILLISECONDS",
 ] as const satisfies readonly UsageMetricName[];
 
-export type PaygEligibleMetric =
-  (typeof paygEligibleMetrics)[number];
+export type PaygEligibleMetric = (typeof paygEligibleMetrics)[number];
 
 export type PaygCoverage = {
   metric: PaygEligibleMetric;
@@ -48,50 +47,45 @@ export function incrementalOverageAmount(input: {
     throw new AppError(
       503,
       "OVERAGE_PRICE_INVALID",
-      "The overage price configuration is invalid."
+      "The overage price configuration is invalid.",
     );
   }
 
   const before = ceilDiv(
-    input.current > input.limit
-      ? input.current - input.limit
-      : 0n,
-    input.unitSize
+    input.current > input.limit ? input.current - input.limit : 0n,
+    input.unitSize,
   );
   const next = input.current + input.requested;
   const after = ceilDiv(
     next > input.limit ? next - input.limit : 0n,
-    input.unitSize
+    input.unitSize,
   );
-  const billableUnits =
-    after > before ? after - before : 0n;
+  const billableUnits = after > before ? after - before : 0n;
 
   return {
     billableUnits,
-    amountMinor: billableUnits * input.unitPriceMinor
+    amountMinor: billableUnits * input.unitPriceMinor,
   };
 }
 
 function unitPrice(
   entitlement: EntitlementValue,
-  currency: BillingCurrencyName
+  currency: BillingCurrencyName,
 ): bigint | null {
   return currency === "BDT"
-    ? entitlement.overageBdtMinor ?? null
-    : entitlement.overageUsdMinor ?? null;
+    ? (entitlement.overageBdtMinor ?? null)
+    : (entitlement.overageUsdMinor ?? null);
 }
 
 export function isPaygEligibleMetric(
-  metric: UsageMetricName
+  metric: UsageMetricName,
 ): metric is PaygEligibleMetric {
-  return (
-    paygEligibleMetrics as readonly string[]
-  ).includes(metric);
+  return (paygEligibleMetrics as readonly string[]).includes(metric);
 }
 
 async function lockWallet(
   tx: Prisma.TransactionClient,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<void> {
   await tx.$queryRaw`
     SELECT "id"
@@ -104,7 +98,7 @@ async function lockWallet(
 async function releaseWalletReservation(
   tx: Prisma.TransactionClient,
   workspaceId: string,
-  amountMinor: bigint
+  amountMinor: bigint,
 ): Promise<void> {
   if (amountMinor <= 0n) return;
 
@@ -134,19 +128,16 @@ export async function ensurePaygCoverageInTransaction(
     periodStart: Date;
     periodEnd: Date;
     operationKey: string;
-  }
+  },
 ): Promise<PaygCoverage | null> {
-  if (
-    input.requested <= 0n ||
-    !isPaygEligibleMetric(input.metric)
-  ) {
+  if (input.requested <= 0n || !isPaygEligibleMetric(input.metric)) {
     return null;
   }
 
   const [preference, policy] = await Promise.all([
     tx.billingPreference.findUnique({
       where: { workspaceId: input.workspaceId },
-      select: { revenueModel: true }
+      select: { revenueModel: true },
     }),
     tx.paygPolicy.findUnique({
       where: { workspaceId: input.workspaceId },
@@ -155,15 +146,14 @@ export async function ensurePaygCoverageInTransaction(
         metrics: {
           where: {
             metric: input.metric,
-            enabled: true
-          }
-        }
-      }
-    })
+            enabled: true,
+          },
+        },
+      },
+    }),
   ]);
 
-  const prepaid =
-    preference?.revenueModel === "PREPAID_PAYG";
+  const prepaid = preference?.revenueModel === "PREPAID_PAYG";
   const effectiveLimit = 0n;
   const next = input.current + input.requested;
 
@@ -182,8 +172,8 @@ export async function ensurePaygCoverageInTransaction(
         current: input.current.toString(),
         requested: input.requested.toString(),
         prepaidPaygAvailable: true,
-        action: "TOP_UP_AND_ENABLE_PREPAID_PAYG"
-      }
+        action: "TOP_UP_AND_ENABLE_PREPAID_PAYG",
+      },
     );
   }
 
@@ -197,31 +187,23 @@ export async function ensurePaygCoverageInTransaction(
         limit: effectiveLimit.toString(),
         current: input.current.toString(),
         requested: input.requested.toString(),
-        paygAvailable: false
-      }
+        paygAvailable: false,
+      },
     );
   }
 
   const unitSize = input.entitlement.overageUnit;
-  const price = unitPrice(
-    input.entitlement,
-    input.currency
-  );
+  const price = unitPrice(input.entitlement, input.currency);
 
-  if (
-    !unitSize ||
-    unitSize <= 0n ||
-    price === null ||
-    price < 0n
-  ) {
+  if (!unitSize || unitSize <= 0n || price === null || price < 0n) {
     throw new AppError(
       413,
       "PLAN_LIMIT_EXCEEDED",
       `${input.metric} has no active PAYG price.`,
       {
         metric: input.metric,
-        paygAvailable: false
-      }
+        paygAvailable: false,
+      },
     );
   }
 
@@ -235,27 +217,22 @@ export async function ensurePaygCoverageInTransaction(
   ) {
     throw new AppError(
       prepaid ? 402 : 413,
-      prepaid
-        ? "PREPAID_PAYG_NOT_ACTIVE"
-        : "PLAN_LIMIT_EXCEEDED",
+      prepaid ? "PREPAID_PAYG_NOT_ACTIVE" : "PLAN_LIMIT_EXCEEDED",
       prepaid
         ? "Activate prepaid Pay As You Go after topping up the wallet."
         : `${input.metric} exceeds the current plan limit.`,
       {
         metric: input.metric,
         paygAvailable: true,
-        paygEnabled: false
-      }
+        paygEnabled: false,
+      },
     );
   }
 
   const paymentMethod = policy.defaultPaymentMethod;
 
   if (!prepaid) {
-    if (
-      !paymentMethod ||
-      paymentMethod.status !== "ACTIVE"
-    ) {
+    if (!paymentMethod || paymentMethod.status !== "ACTIVE") {
       throw new AppError(
         413,
         "PLAN_LIMIT_EXCEEDED",
@@ -263,19 +240,16 @@ export async function ensurePaygCoverageInTransaction(
         {
           metric: input.metric,
           paygAvailable: true,
-          paygEnabled: false
-        }
+          paygEnabled: false,
+        },
       );
     }
 
-    if (
-      paymentMethod.provider === "STRIPE" &&
-      !env.STRIPE_PAYG_ENABLED
-    ) {
+    if (paymentMethod.provider === "STRIPE" && !env.STRIPE_PAYG_ENABLED) {
       throw new AppError(
         402,
         "PAYG_PROVIDER_UNAVAILABLE",
-        "The saved-card provider is unavailable."
+        "The saved-card provider is unavailable.",
       );
     }
 
@@ -283,26 +257,24 @@ export async function ensurePaygCoverageInTransaction(
       throw new AppError(
         402,
         "PAYG_PROVIDER_UNAVAILABLE",
-        "SSLCOMMERZ recurring-token approval is required."
+        "SSLCOMMERZ recurring-token approval is required.",
       );
     }
   }
 
-  const existingAuthorization =
-    await tx.paygAuthorization.findUnique({
-      where: { operationKey: input.operationKey }
-    });
+  const existingAuthorization = await tx.paygAuthorization.findUnique({
+    where: { operationKey: input.operationKey },
+  });
 
   if (existingAuthorization) {
     if (
-      existingAuthorization.workspaceId !==
-        input.workspaceId ||
+      existingAuthorization.workspaceId !== input.workspaceId ||
       existingAuthorization.metric !== input.metric
     ) {
       throw new AppError(
         409,
         "PAYG_OPERATION_KEY_CONFLICT",
-        "The PAYG operation key belongs to another operation."
+        "The PAYG operation key belongs to another operation.",
       );
     }
 
@@ -312,110 +284,96 @@ export async function ensurePaygCoverageInTransaction(
     ) {
       return {
         metric: input.metric,
-        amountMinor:
-          existingAuthorization.estimatedAmountMinor,
+        amountMinor: existingAuthorization.estimatedAmountMinor,
         currency: input.currency,
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
-        operationKey: input.operationKey
+        operationKey: input.operationKey,
       };
     }
 
-    if (
-      existingAuthorization.status === "COMMITTED"
-    ) {
+    if (existingAuthorization.status === "COMMITTED") {
       return {
         metric: input.metric,
-        amountMinor:
-          existingAuthorization.estimatedAmountMinor,
+        amountMinor: existingAuthorization.estimatedAmountMinor,
         currency: input.currency,
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
-        operationKey: input.operationKey
+        operationKey: input.operationKey,
       };
     }
 
     throw new AppError(
       409,
       "PAYG_OPERATION_KEY_EXPIRED",
-      "The PAYG authorization expired or was released."
+      "The PAYG authorization expired or was released.",
     );
   }
 
-  const activeMetricQuantity =
-    await tx.paygAuthorization.aggregate({
-      where: {
-        workspaceId: input.workspaceId,
-        metric: input.metric,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-        status: "ACTIVE",
-        expiresAt: { gt: new Date() }
-      },
-      _sum: { requestedQuantity: true }
-    });
+  const activeMetricQuantity = await tx.paygAuthorization.aggregate({
+    where: {
+      workspaceId: input.workspaceId,
+      metric: input.metric,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      status: "ACTIVE",
+      expiresAt: { gt: new Date() },
+    },
+    _sum: { requestedQuantity: true },
+  });
 
   const pricingCurrent =
-    input.current +
-    (activeMetricQuantity._sum.requestedQuantity ?? 0n);
+    input.current + (activeMetricQuantity._sum.requestedQuantity ?? 0n);
 
   const charge = incrementalOverageAmount({
     current: pricingCurrent,
     requested: input.requested,
     limit: effectiveLimit,
     unitSize,
-    unitPriceMinor: price
+    unitPriceMinor: price,
   });
 
   if (charge.amountMinor === 0n) return null;
 
   if (metricPolicy.metricSpendCapMinor) {
-    const [metricLedger, metricAuthorizations] =
-      await Promise.all([
-        tx.paygLedgerEntry.aggregate({
-          where: {
-            workspaceId: input.workspaceId,
-            metric: input.metric,
-            periodStart: input.periodStart,
-            periodEnd: input.periodEnd,
-            status: { in: ["PENDING", "CHARGED"] }
-          },
-          _sum: { amountMinor: true }
-        }),
-        tx.paygAuthorization.aggregate({
-          where: {
-            workspaceId: input.workspaceId,
-            metric: input.metric,
-            periodStart: input.periodStart,
-            periodEnd: input.periodEnd,
-            status: "ACTIVE",
-            expiresAt: { gt: new Date() }
-          },
-          _sum: { estimatedAmountMinor: true }
-        })
-      ]);
+    const [metricLedger, metricAuthorizations] = await Promise.all([
+      tx.paygLedgerEntry.aggregate({
+        where: {
+          workspaceId: input.workspaceId,
+          metric: input.metric,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          status: { in: ["PENDING", "CHARGED"] },
+        },
+        _sum: { amountMinor: true },
+      }),
+      tx.paygAuthorization.aggregate({
+        where: {
+          workspaceId: input.workspaceId,
+          metric: input.metric,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          status: "ACTIVE",
+          expiresAt: { gt: new Date() },
+        },
+        _sum: { estimatedAmountMinor: true },
+      }),
+    ]);
 
     const metricSpend =
       (metricLedger._sum.amountMinor ?? 0n) +
-      (
-        metricAuthorizations._sum
-          .estimatedAmountMinor ?? 0n
-      );
+      (metricAuthorizations._sum.estimatedAmountMinor ?? 0n);
 
-    if (
-      metricSpend + charge.amountMinor >
-      metricPolicy.metricSpendCapMinor
-    ) {
+    if (metricSpend + charge.amountMinor > metricPolicy.metricSpendCapMinor) {
       throw new AppError(
         402,
         "PAYG_METRIC_CAP_REACHED",
         `The PAYG cap for ${input.metric} would be exceeded.`,
         {
           metric: input.metric,
-          metricSpendCapMinor:
-            metricPolicy.metricSpendCapMinor.toString(),
-          currency: policy.currency
-        }
+          metricSpendCapMinor: metricPolicy.metricSpendCapMinor.toString(),
+          currency: policy.currency,
+        },
       );
     }
   }
@@ -424,7 +382,7 @@ export async function ensurePaygCoverageInTransaction(
     await lockWallet(tx, input.workspaceId);
 
     const wallet = await tx.prepaidWallet.findUnique({
-      where: { workspaceId: input.workspaceId }
+      where: { workspaceId: input.workspaceId },
     });
 
     if (
@@ -435,12 +393,11 @@ export async function ensurePaygCoverageInTransaction(
       throw new AppError(
         402,
         "PREPAID_WALLET_UNAVAILABLE",
-        "The prepaid wallet is unavailable."
+        "The prepaid wallet is unavailable.",
       );
     }
 
-    const available =
-      wallet.balanceMinor - wallet.reservedMinor;
+    const available = wallet.balanceMinor - wallet.reservedMinor;
 
     if (available < charge.amountMinor) {
       throw new AppError(
@@ -452,8 +409,8 @@ export async function ensurePaygCoverageInTransaction(
           balanceMinor: wallet.balanceMinor.toString(),
           reservedMinor: wallet.reservedMinor.toString(),
           availableMinor: available.toString(),
-          requiredMinor: charge.amountMinor.toString()
-        }
+          requiredMinor: charge.amountMinor.toString(),
+        },
       );
     }
 
@@ -461,56 +418,48 @@ export async function ensurePaygCoverageInTransaction(
       where: { id: wallet.id },
       data: {
         reservedMinor: {
-          increment: charge.amountMinor
-        }
-      }
+          increment: charge.amountMinor,
+        },
+      },
     });
   } else {
-    const [ledger, activeAuthorizations] =
-      await Promise.all([
-        tx.paygLedgerEntry.aggregate({
-          where: {
-            workspaceId: input.workspaceId,
-            periodStart: input.periodStart,
-            periodEnd: input.periodEnd,
-            status: { in: ["PENDING", "CHARGED"] }
-          },
-          _sum: { amountMinor: true }
-        }),
-        tx.paygAuthorization.aggregate({
-          where: {
-            workspaceId: input.workspaceId,
-            periodStart: input.periodStart,
-            periodEnd: input.periodEnd,
-            status: "ACTIVE",
-            expiresAt: { gt: new Date() }
-          },
-          _sum: { estimatedAmountMinor: true }
-        })
-      ]);
+    const [ledger, activeAuthorizations] = await Promise.all([
+      tx.paygLedgerEntry.aggregate({
+        where: {
+          workspaceId: input.workspaceId,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          status: { in: ["PENDING", "CHARGED"] },
+        },
+        _sum: { amountMinor: true },
+      }),
+      tx.paygAuthorization.aggregate({
+        where: {
+          workspaceId: input.workspaceId,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          status: "ACTIVE",
+          expiresAt: { gt: new Date() },
+        },
+        _sum: { estimatedAmountMinor: true },
+      }),
+    ]);
 
     const existingSpend =
       (ledger._sum.amountMinor ?? 0n) +
-      (
-        activeAuthorizations._sum
-          .estimatedAmountMinor ?? 0n
-      );
+      (activeAuthorizations._sum.estimatedAmountMinor ?? 0n);
 
-    if (
-      existingSpend + charge.amountMinor >
-      policy.monthlySpendCapMinor
-    ) {
+    if (existingSpend + charge.amountMinor > policy.monthlySpendCapMinor) {
       throw new AppError(
         402,
         "PAYG_SPEND_CAP_REACHED",
-        "The PAYG monthly spend cap would be exceeded."
+        "The PAYG monthly spend cap would be exceeded.",
       );
     }
   }
 
   const expiresAt = new Date(
-    Date.now() +
-      env.PAYG_AUTHORIZATION_TTL_MINUTES * 60_000
+    Date.now() + env.PAYG_AUTHORIZATION_TTL_MINUTES * 60_000,
   );
 
   await tx.paygAuthorization.create({
@@ -523,8 +472,8 @@ export async function ensurePaygCoverageInTransaction(
       currency: input.currency,
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
-      expiresAt
-    }
+      expiresAt,
+    },
   });
 
   return {
@@ -533,7 +482,7 @@ export async function ensurePaygCoverageInTransaction(
     currency: input.currency,
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
-    operationKey: input.operationKey
+    operationKey: input.operationKey,
   };
 }
 
@@ -551,22 +500,17 @@ export async function recordPaygLedgerInTransaction(
     periodStart: Date;
     periodEnd: Date;
     operationKey?: string;
-  }
+  },
 ): Promise<void> {
-  if (
-    input.quantity <= 0n ||
-    !isPaygEligibleMetric(input.metric)
-  ) {
+  if (input.quantity <= 0n || !isPaygEligibleMetric(input.metric)) {
     return;
   }
 
-  const preference =
-    await tx.billingPreference.findUnique({
-      where: { workspaceId: input.workspaceId },
-      select: { revenueModel: true }
-    });
-  const prepaid =
-    preference?.revenueModel === "PREPAID_PAYG";
+  const preference = await tx.billingPreference.findUnique({
+    where: { workspaceId: input.workspaceId },
+    select: { revenueModel: true },
+  });
+  const prepaid = preference?.revenueModel === "PREPAID_PAYG";
   const effectiveLimit = 0n;
 
   if (!prepaid) {
@@ -574,12 +518,12 @@ export async function recordPaygLedgerInTransaction(
       await tx.paygAuthorization.updateMany({
         where: {
           operationKey: input.operationKey,
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
         data: {
           status: "RELEASED",
-          releasedAt: new Date()
-        }
+          releasedAt: new Date(),
+        },
       });
     }
     return;
@@ -587,21 +531,19 @@ export async function recordPaygLedgerInTransaction(
 
   const authorization = input.operationKey
     ? await tx.paygAuthorization.findUnique({
-        where: { operationKey: input.operationKey }
+        where: { operationKey: input.operationKey },
       })
     : null;
 
   if (
     authorization &&
-    (
-      authorization.workspaceId !== input.workspaceId ||
-      authorization.metric !== input.metric
-    )
+    (authorization.workspaceId !== input.workspaceId ||
+      authorization.metric !== input.metric)
   ) {
     throw new AppError(
       409,
       "PAYG_AUTHORIZATION_MISMATCH",
-      "The PAYG authorization does not match the usage."
+      "The PAYG authorization does not match the usage.",
     );
   }
 
@@ -611,28 +553,21 @@ export async function recordPaygLedgerInTransaction(
       metrics: {
         where: {
           metric: input.metric,
-          enabled: true
-        }
-      }
-    }
+          enabled: true,
+        },
+      },
+    },
   });
 
   const unitSize = input.entitlement.overageUnit;
-  const price = unitPrice(
-    input.entitlement,
-    input.currency
-  );
+  const price = unitPrice(input.entitlement, input.currency);
 
   if (
-    (
-      !authorization &&
-      (
-        !policy ||
+    (!authorization &&
+      (!policy ||
         policy.status !== "ACTIVE" ||
         policy.currency !== input.currency ||
-        policy.metrics.length === 0
-      )
-    ) ||
+        policy.metrics.length === 0)) ||
     !unitSize ||
     price === null
   ) {
@@ -644,41 +579,35 @@ export async function recordPaygLedgerInTransaction(
     requested: input.quantity,
     limit: effectiveLimit,
     unitSize,
-    unitPriceMinor: price
+    unitPriceMinor: price,
   });
 
-  const authorizedAmount =
-    authorization?.estimatedAmountMinor;
+  const authorizedAmount = authorization?.estimatedAmountMinor;
   const amountMinor =
-    authorizedAmount !== undefined &&
-    charge.amountMinor > authorizedAmount
+    authorizedAmount !== undefined && charge.amountMinor > authorizedAmount
       ? authorizedAmount
       : charge.amountMinor;
-  const billableUnits =
-    price > 0n
-      ? amountMinor / price
-      : charge.billableUnits;
+  const billableUnits = price > 0n ? amountMinor / price : charge.billableUnits;
 
   if (amountMinor <= 0n) {
     if (input.operationKey) {
       await tx.paygAuthorization.updateMany({
         where: {
           operationKey: input.operationKey,
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
         data: {
           status: "COMMITTED",
-          committedAt: new Date()
-        }
+          committedAt: new Date(),
+        },
       });
     }
     return;
   }
 
-  const existing =
-    await tx.paygLedgerEntry.findUnique({
-      where: { usageEventId: input.usageEventId }
-    });
+  const existing = await tx.paygLedgerEntry.findUnique({
+    where: { usageEventId: input.usageEventId },
+  });
 
   if (existing) return;
 
@@ -695,15 +624,15 @@ export async function recordPaygLedgerInTransaction(
       unitPriceMinor: price,
       amountMinor,
       currency: input.currency,
-      status: prepaid ? "CHARGED" : "PENDING"
-    }
+      status: prepaid ? "CHARGED" : "PENDING",
+    },
   });
 
   if (prepaid) {
     await lockWallet(tx, input.workspaceId);
 
     const wallet = await tx.prepaidWallet.findUnique({
-      where: { workspaceId: input.workspaceId }
+      where: { workspaceId: input.workspaceId },
     });
 
     if (
@@ -714,38 +643,30 @@ export async function recordPaygLedgerInTransaction(
       throw new AppError(
         402,
         "PREPAID_WALLET_UNAVAILABLE",
-        "The prepaid wallet is unavailable."
+        "The prepaid wallet is unavailable.",
       );
     }
 
-    const reserved =
-      authorization?.estimatedAmountMinor ?? 0n;
-    const availableBefore =
-      wallet.balanceMinor - wallet.reservedMinor;
+    const reserved = authorization?.estimatedAmountMinor ?? 0n;
+    const availableBefore = wallet.balanceMinor - wallet.reservedMinor;
 
-    if (
-      reserved === 0n &&
-      availableBefore < amountMinor
-    ) {
+    if (reserved === 0n && availableBefore < amountMinor) {
       throw new AppError(
         402,
         "PREPAID_BALANCE_INSUFFICIENT",
-        "Top up the prepaid wallet to continue."
+        "Top up the prepaid wallet to continue.",
       );
     }
 
-    const nextBalance =
-      wallet.balanceMinor - amountMinor;
+    const nextBalance = wallet.balanceMinor - amountMinor;
     const nextReserved =
-      wallet.reservedMinor > reserved
-        ? wallet.reservedMinor - reserved
-        : 0n;
+      wallet.reservedMinor > reserved ? wallet.reservedMinor - reserved : 0n;
 
     if (nextBalance < 0n) {
       throw new AppError(
         402,
         "PREPAID_BALANCE_INSUFFICIENT",
-        "Top up the prepaid wallet to continue."
+        "Top up the prepaid wallet to continue.",
       );
     }
 
@@ -753,8 +674,8 @@ export async function recordPaygLedgerInTransaction(
       where: { id: wallet.id },
       data: {
         balanceMinor: nextBalance,
-        reservedMinor: nextReserved
-      }
+        reservedMinor: nextReserved,
+      },
     });
 
     await tx.walletTransaction.create({
@@ -765,17 +686,16 @@ export async function recordPaygLedgerInTransaction(
         amountMinor: -amountMinor,
         balanceAfterMinor: nextBalance,
         currency: input.currency,
-        idempotencyKey:
-          `payg-debit:${input.usageEventId}`,
+        idempotencyKey: `payg-debit:${input.usageEventId}`,
         paygLedgerEntryId: ledger.id,
         reference: input.operationKey ?? input.usageEventId,
         metadata: {
           metric: input.metric,
           quantity: input.quantity.toString(),
           unitSize: unitSize.toString(),
-          unitPriceMinor: price.toString()
-        }
-      }
+          unitPriceMinor: price.toString(),
+        },
+      },
     });
   }
 
@@ -783,36 +703,33 @@ export async function recordPaygLedgerInTransaction(
     await tx.paygAuthorization.updateMany({
       where: {
         operationKey: input.operationKey,
-        status: "ACTIVE"
+        status: "ACTIVE",
       },
       data: {
         status: "COMMITTED",
-        committedAt: new Date()
-      }
+        committedAt: new Date(),
+      },
     });
   }
 }
 
-export async function releaseExpiredPaygAuthorizations():
-  Promise<number> {
-  const expired =
-    await prisma.paygAuthorization.findMany({
-      where: {
-        status: "ACTIVE",
-        expiresAt: { lte: new Date() }
-      },
-      orderBy: { expiresAt: "asc" },
-      take: 1000
-    });
+export async function releaseExpiredPaygAuthorizations(): Promise<number> {
+  const expired = await prisma.paygAuthorization.findMany({
+    where: {
+      status: "ACTIVE",
+      expiresAt: { lte: new Date() },
+    },
+    orderBy: { expiresAt: "asc" },
+    take: 1000,
+  });
 
   let released = 0;
 
   for (const item of expired) {
-    await prisma.$transaction(async tx => {
-      const current =
-        await tx.paygAuthorization.findUnique({
-          where: { id: item.id }
-        });
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.paygAuthorization.findUnique({
+        where: { id: item.id },
+      });
 
       if (
         !current ||
@@ -826,15 +743,15 @@ export async function releaseExpiredPaygAuthorizations():
       await releaseWalletReservation(
         tx,
         current.workspaceId,
-        current.estimatedAmountMinor
+        current.estimatedAmountMinor,
       );
 
       await tx.paygAuthorization.update({
         where: { id: current.id },
         data: {
           status: "EXPIRED",
-          releasedAt: new Date()
-        }
+          releasedAt: new Date(),
+        },
       });
 
       released += 1;

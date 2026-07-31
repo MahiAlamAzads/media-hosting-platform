@@ -14,7 +14,8 @@ export const integrationExamples: IntegrationExample[] = [
     label: "Next.js",
     description:
       "A secure App Router Route Handler. The API key stays on the server, while the caller chooses PUBLIC or PRIVATE visibility.",
-    install: "Copy media-platform-client.ts into src/lib, then add this Route Handler.",
+    install:
+      "Copy media-platform-client.ts into src/lib, then add this Route Handler.",
     filename: "app/api/media/upload/route.ts",
     downloadHref: "/examples/nextjs-upload-route.ts",
     code: `import { randomUUID } from "node:crypto";
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   } finally {
     await unlink(tempPath).catch(() => undefined);
   }
-}`
+}`,
   },
   {
     id: "nodejs",
@@ -127,7 +128,7 @@ console.log({
     visibility === "PRIVATE"
       ? await client.createDeliveryUrl(uploaded.assetId)
       : null
-});`
+});`,
   },
   {
     id: "express",
@@ -196,7 +197,7 @@ router.post(
   }
 );
 
-export default router;`
+export default router;`,
   },
   {
     id: "fastify",
@@ -277,7 +278,7 @@ export default async function mediaRoutes(fastify) {
       );
     }
   });
-}`
+}`,
   },
   {
     id: "php",
@@ -333,113 +334,110 @@ print_r([
                 $uploaded['assetId']
             )
             : null,
-]);`
-  }
+]);`,
+  },
 ];
 
 export const apiKeyScopes = [
   [
     "uploads:write",
-    "Create upload sessions, send chunks, complete uploads and abort failed uploads."
+    "Create upload sessions, send chunks, complete uploads and abort failed uploads.",
   ],
   [
     "media:read",
-    "List media, read metadata and create temporary signed delivery URLs."
+    "List media, read metadata and create temporary signed delivery URLs.",
   ],
-  [
-    "media:write",
-    "Rename, move and switch assets between PUBLIC and PRIVATE."
-  ],
-  [
-    "media:delete",
-    "Trash, restore and permanently delete media."
-  ],
-  [
-    "folders:read",
-    "Read the workspace folder tree."
-  ],
-  [
-    "folders:write",
-    "Create, rename, move and delete folders."
-  ],
-  [
-    "usage:read",
-    "Read usage, quota and billing-meter summaries."
-  ]
+  ["media:write", "Rename, move and switch assets between PUBLIC and PRIVATE."],
+  ["media:delete", "Trash, restore and permanently delete media."],
+  ["folders:read", "Read the workspace folder tree."],
+  ["folders:write", "Create, rename, move and delete folders."],
+  ["usage:read", "Read usage, quota and billing-meter summaries."],
 ] as const;
 
 export const coreEndpoints = [
   [
     "POST",
     "/api/v1/uploads",
-    "Start a resumable upload and select PUBLIC or PRIVATE visibility."
+    "Start a resumable upload and select PUBLIC or PRIVATE visibility.",
   ],
   [
     "GET",
     "/api/v1/uploads/:uploadId",
-    "Read upload progress and uploaded chunk indexes."
+    "Read upload progress and uploaded chunk indexes.",
   ],
   [
     "PUT",
     "/api/v1/uploads/:uploadId/chunks/:chunkIndex",
-    "Send one application/octet-stream chunk."
+    "Send one application/octet-stream chunk.",
   ],
   [
     "POST",
     "/api/v1/uploads/:uploadId/complete",
-    "Assemble the asset and return imgUrl/fileUrl fields."
+    "Assemble the asset and return imgUrl/fileUrl fields.",
   ],
   [
     "DELETE",
     "/api/v1/uploads/:uploadId",
-    "Abort an incomplete upload and release reserved quota."
+    "Abort an incomplete upload and release reserved quota.",
   ],
   [
     "GET",
     "/api/v1/media",
-    "List assets with visibility and stable URL fields."
+    "List assets with visibility and stable URL fields.",
   ],
   [
     "GET",
     "/api/v1/media/:assetId",
-    "Read one asset and its available CDN URLs."
+    "Read one asset and its available CDN URLs.",
   ],
   [
     "POST",
     "/api/v1/media/:assetId/delivery-token",
-    "Create a temporary signed URL for private media."
+    "Create a temporary signed URL for private media.",
   ],
   [
     "PATCH",
     "/api/v1/media/:assetId",
-    "Rename, move or change PUBLIC/PRIVATE visibility."
+    "Rename, move or change PUBLIC/PRIVATE visibility.",
   ],
   [
     "GET",
     "/i/:assetId",
-    "Serve a public image or file from the short CDN URL."
+    "Serve a public image or file from the short CDN URL.",
   ],
-  [
-    "GET",
-    "/i/:assetId?variant=THUMBNAIL",
-    "Serve a ready thumbnail variant."
-  ],
-  [
-    "GET",
-    "/i/:assetId?variant=PREVIEW",
-    "Serve a ready preview variant."
-  ]
+  ["GET", "/i/:assetId?variant=THUMBNAIL", "Serve a ready thumbnail variant."],
+  ["GET", "/i/:assetId?variant=PREVIEW", "Serve a ready preview variant."],
 ] as const;
 
 export const commonErrors = [
   ["400", "EMPTY_CHUNK", "Check the raw chunk body and chunk index."],
   ["401", "INVALID_API_KEY", "Check the Authorization header and key status."],
-  ["402", "PREPAID_PAYG_NOT_ACTIVE", "Top up and activate prepaid PAYG, or use a subscription."],
+  [
+    "402",
+    "PREPAID_PAYG_NOT_ACTIVE",
+    "Top up and activate prepaid PAYG, or use a subscription.",
+  ],
   ["403", "INSUFFICIENT_SCOPE", "Create a key with the required API scope."],
   ["404", "MEDIA_NOT_FOUND", "Check the upload, folder or asset identifier."],
-  ["409", "DUPLICATE_MEDIA", "Reuse the existingAsset returned in the error when appropriate."],
-  ["410", "UPLOAD_EXPIRED", "Create a new upload session and restart the upload."],
-  ["413", "PLAN_LIMIT_EXCEEDED", "Upgrade, top up PAYG or reduce the requested usage."],
-  ["422", "VALIDATION_ERROR", "Correct the invalid request fields or declared media type."],
-  ["429", "RATE_LIMITED", "Retry with exponential backoff and jitter."]
+  [
+    "409",
+    "DUPLICATE_MEDIA",
+    "Reuse the existingAsset returned in the error when appropriate.",
+  ],
+  [
+    "410",
+    "UPLOAD_EXPIRED",
+    "Create a new upload session and restart the upload.",
+  ],
+  [
+    "413",
+    "PLAN_LIMIT_EXCEEDED",
+    "Upgrade, top up PAYG or reduce the requested usage.",
+  ],
+  [
+    "422",
+    "VALIDATION_ERROR",
+    "Correct the invalid request fields or declared media type.",
+  ],
+  ["429", "RATE_LIMITED", "Retry with exponential backoff and jitter."],
 ] as const;

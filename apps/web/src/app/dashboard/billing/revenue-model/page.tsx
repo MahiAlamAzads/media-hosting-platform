@@ -31,8 +31,8 @@ export default function RevenueModelPage() {
 
   useEffect(() => {
     void apiRequest<{ data: RevenueOptions }>("/api/v1/billing/revenue-options")
-      .then(response => setData(response.data))
-      .catch(value => setError(value.message));
+      .then((response) => setData(response.data))
+      .catch((value) => setError(value.message));
   }, []);
 
   return (
@@ -43,32 +43,44 @@ export default function RevenueModelPage() {
       />
       <Feedback message={error} variant="danger" />
 
-      {!data ? <LoadingBlock label="Loading revenue options…" /> : (
+      {!data ? (
+        <LoadingBlock label="Loading revenue options…" />
+      ) : (
         <>
           <div className="alert alert-secondary">
-            Current model: <strong>{data.current.revenueModel.replaceAll("_", " ")}</strong>
-            {" · "}{data.current.planName}
-            {" · "}{data.current.subscriptionTerm.replaceAll("_", " ")}
+            Current model:{" "}
+            <strong>{data.current.revenueModel.replaceAll("_", " ")}</strong>
+            {" · "}
+            {data.current.planName}
+            {" · "}
+            {data.current.subscriptionTerm.replaceAll("_", " ")}
           </div>
 
           <div className="row g-4">
             <div className="col-lg-4">
-              <article className={`card h-100 ${
-                data.current.revenueModel === "SUBSCRIPTION" ? "border-primary" : ""
-              }`}>
+              <article
+                className={`card h-100 ${
+                  data.current.revenueModel === "SUBSCRIPTION"
+                    ? "border-primary"
+                    : ""
+                }`}
+              >
                 <div className="card-body p-4 d-flex flex-column">
                   <i className="bi bi-calendar-check fs-2 text-primary mb-3" />
                   <h2 className="h4">Subscription</h2>
                   <p className="text-secondary">
-                    Predictable limits and fixed upfront pricing. Choose Free,
-                    3 months, 6 months or 1 year.
+                    Predictable limits and fixed upfront pricing. Choose Free, 3
+                    months, 6 months or 1 year.
                   </p>
                   <ul className="small text-secondary ps-3">
                     <li>Included storage and bandwidth</li>
                     <li>Fixed commitment period</li>
                     <li>Manual Payment or SSLCOMMERZ</li>
                   </ul>
-                  <a className="btn btn-primary mt-auto" href="/dashboard/billing/plans">
+                  <a
+                    className="btn btn-primary mt-auto"
+                    href="/dashboard/billing/plans"
+                  >
                     Compare subscription offers
                   </a>
                 </div>
@@ -76,27 +88,34 @@ export default function RevenueModelPage() {
             </div>
 
             <div className="col-lg-4">
-              <article className={`card h-100 ${
-                data.current.revenueModel === "PREPAID_PAYG" ? "border-success" : ""
-              }`}>
+              <article
+                className={`card h-100 ${
+                  data.current.revenueModel === "PREPAID_PAYG"
+                    ? "border-success"
+                    : ""
+                }`}
+              >
                 <div className="card-body p-4 d-flex flex-column">
                   <i className="bi bi-wallet2 fs-2 text-success mb-3" />
                   <h2 className="h4">Prepaid Pay As You Go</h2>
                   <p className="text-secondary">
-                    Top up before activation and pay only for the metered services
-                    you select.
+                    Top up before activation and pay only for the metered
+                    services you select.
                   </p>
                   <div className="small mb-3">
                     Minimum top-up:{" "}
                     <strong>
-                      {formatMoneyMinor(data.minimumTopupMinor, data.current.currency)}
+                      {formatMoneyMinor(
+                        data.minimumTopupMinor,
+                        data.current.currency,
+                      )}
                     </strong>
                     <br />
                     Wallet available:{" "}
                     <strong>
                       {formatMoneyMinor(
                         data.wallet?.availableMinor ?? "0",
-                        data.current.currency
+                        data.current.currency,
                       )}
                     </strong>
                   </div>
@@ -111,9 +130,13 @@ export default function RevenueModelPage() {
             </div>
 
             <div className="col-lg-4">
-              <article className={`card h-100 ${
-                data.current.revenueModel === "ENTERPRISE_CUSTOM" ? "border-dark" : ""
-              }`}>
+              <article
+                className={`card h-100 ${
+                  data.current.revenueModel === "ENTERPRISE_CUSTOM"
+                    ? "border-dark"
+                    : ""
+                }`}
+              >
                 <div className="card-body p-4 d-flex flex-column">
                   <i className="bi bi-buildings fs-2 mb-3" />
                   <h2 className="h4">Enterprise custom</h2>
@@ -127,7 +150,10 @@ export default function RevenueModelPage() {
                       {data.enterpriseInquiry.status.replaceAll("_", " ")}
                     </div>
                   )}
-                  <a className="btn btn-dark mt-auto" href="/dashboard/billing/enterprise">
+                  <a
+                    className="btn btn-dark mt-auto"
+                    href="/dashboard/billing/enterprise"
+                  >
                     Talk to sales
                   </a>
                 </div>

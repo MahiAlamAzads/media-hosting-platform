@@ -7,7 +7,7 @@ import { assertMeteredUsageAllowed } from "../billing/quota.service.js";
 
 function contentDisposition(
   disposition: "inline" | "attachment",
-  filename: string
+  filename: string,
 ): string {
   const basename = path.basename(filename);
   const safeAscii = basename.replace(/[^\x20-\x7E]+/g, "_");
@@ -26,19 +26,18 @@ export class DeliveryController {
 
     const descriptor = await this.service.authorizeDelivery({
       token: token ?? "",
-      rangeHeader: req.get("range")
+      rangeHeader: req.get("range"),
     });
 
     await assertMeteredUsageAllowed(
       descriptor.asset.workspaceId,
       "DELIVERY_BYTES",
       BigInt(descriptor.contentLength),
-      `delivery:${req.id}`
+      `delivery:${req.id}`,
     );
 
     const contentType =
-      descriptor.asset.detectedContentType ??
-      descriptor.asset.contentType;
+      descriptor.asset.detectedContentType ?? descriptor.asset.contentType;
 
     res.status(descriptor.statusCode);
     res.setHeader("Accept-Ranges", "bytes");
@@ -48,8 +47,8 @@ export class DeliveryController {
       "Content-Disposition",
       contentDisposition(
         descriptor.disposition,
-        descriptor.asset.originalFilename
-      )
+        descriptor.asset.originalFilename,
+      ),
     );
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Cache-Control", "private, no-store");
@@ -70,22 +69,19 @@ export class DeliveryController {
         metadata: {
           statusCode: descriptor.statusCode,
           range: descriptor.contentRange ?? null,
-          disposition: descriptor.disposition
-        }
-      }).catch(error => {
-        req.log.error(
-          { err: error },
-          "failed to record delivery usage"
-        );
+          disposition: descriptor.disposition,
+        },
+      }).catch((error) => {
+        req.log.error({ err: error }, "failed to record delivery usage");
       });
     });
 
     const stream = createStorageReadStream(
       descriptor.asset.storageKey,
-      descriptor.range ?? undefined
+      descriptor.range ?? undefined,
     );
 
-    stream.on("error", error => {
+    stream.on("error", (error) => {
       req.log.error({ err: error }, "delivery stream failed");
 
       if (!res.headersSent) {

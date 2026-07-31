@@ -6,7 +6,7 @@ import {
   getSubscriptionCommitmentBounds,
   projectUsage,
   subscriptionTermToInterval,
-  usageState
+  usageState,
 } from "../../../../src/modules/billing/billing.utils.js";
 
 describe("Phase 8 billing utilities", () => {
@@ -21,49 +21,42 @@ describe("Phase 8 billing utilities", () => {
     const now = new Date("2026-07-27T12:30:00.000Z");
     expect(getPeriodBounds(now, "MONTHLY")).toEqual({
       start: new Date("2026-07-27T12:30:00.000Z"),
-      end: new Date("2026-08-27T12:30:00.000Z")
+      end: new Date("2026-08-27T12:30:00.000Z"),
     });
     expect(getPeriodBounds(now, "YEARLY")).toEqual({
       start: new Date("2026-07-27T12:30:00.000Z"),
-      end: new Date("2027-07-27T12:30:00.000Z")
+      end: new Date("2027-07-27T12:30:00.000Z"),
     });
 
     expect(
-      getPeriodBounds(
-        new Date("2026-01-31T12:30:00.000Z"),
-        "MONTHLY"
-      ).end
+      getPeriodBounds(new Date("2026-01-31T12:30:00.000Z"), "MONTHLY").end,
     ).toEqual(new Date("2026-02-28T12:30:00.000Z"));
 
     expect(
-      getPeriodBounds(
-        new Date("2028-02-29T12:30:00.000Z"),
-        "YEARLY"
-      ).end
+      getPeriodBounds(new Date("2028-02-29T12:30:00.000Z"), "YEARLY").end,
     ).toEqual(new Date("2029-02-28T12:30:00.000Z"));
   });
-
 
   it("creates fixed 3, 6 and 12 month subscription commitments", () => {
     expect(
       getSubscriptionCommitmentBounds(
         new Date("2026-01-31T10:00:00.000Z"),
-        "THREE_MONTHS"
-      ).end
+        "THREE_MONTHS",
+      ).end,
     ).toEqual(new Date("2026-04-30T10:00:00.000Z"));
 
     expect(
       getSubscriptionCommitmentBounds(
         new Date("2026-08-31T10:00:00.000Z"),
-        "SIX_MONTHS"
-      ).end
+        "SIX_MONTHS",
+      ).end,
     ).toEqual(new Date("2027-02-28T10:00:00.000Z"));
 
     expect(
       getSubscriptionCommitmentBounds(
         new Date("2028-02-29T10:00:00.000Z"),
-        "ONE_YEAR"
-      ).end
+        "ONE_YEAR",
+      ).end,
     ).toEqual(new Date("2029-02-28T10:00:00.000Z"));
 
     expect(subscriptionTermToInterval("THREE_MONTHS")).toBe("MONTHLY");

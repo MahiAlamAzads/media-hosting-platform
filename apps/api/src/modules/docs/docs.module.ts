@@ -4,9 +4,13 @@ import { DocsHttpRepository } from "./docs.facade.repository.js";
 import { DocsHttpRoute } from "./docs.facade.route.js";
 import { DocsHttpService } from "./docs.facade.service.js";
 import { DocsHttpValidation } from "./docs.facade.validation.js";
-const repository=new DocsHttpRepository();
-const validation=new DocsHttpValidation();
-const service=new DocsHttpService(repository,validation);
-const controller=new DocsHttpController(service);
-const route=new DocsHttpRoute(controller);
-export const docsModule: ApiModuleDescriptor={name:"docs",mountPath:"/api/v1/docs",router:route.router};
+const repository = new DocsHttpRepository();
+const validation = new DocsHttpValidation();
+const service = new DocsHttpService(repository, validation);
+const controller = new DocsHttpController(service);
+const route = new DocsHttpRoute(controller);
+export const docsModule: ApiModuleDescriptor = {
+  name: "docs",
+  mountPath: "/api/v1/docs",
+  router: route.router,
+};

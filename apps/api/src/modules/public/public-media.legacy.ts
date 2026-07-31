@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@media/database";
 import {
   createStorageReadStream,
-  storageFileSize
+  storageFileSize,
 } from "../../infrastructure/storage.js";
 import { AppError, asyncHandler } from "../../shared/http.js";
 import { recordUsage } from "../billing/usage.service.js";
@@ -11,7 +11,7 @@ import { assertMeteredUsageAllowed } from "../billing/quota.service.js";
 import { cacheGetOrSet } from "../../infrastructure/cache.js";
 import {
   publicDescriptorCacheId,
-  publicDescriptorTtlSeconds
+  publicDescriptorTtlSeconds,
 } from "./public-media-cache.js";
 
 const router = Router();
@@ -38,22 +38,22 @@ function variantContentType(format: string): string {
 
 async function loadPublicDescriptor(
   assetId: string,
-  variantKind?: "THUMBNAIL" | "PREVIEW"
+  variantKind?: "THUMBNAIL" | "PREVIEW",
 ): Promise<PublicDescriptor> {
   const asset = await prisma.mediaAsset.findFirst({
     where: {
       id: assetId,
       visibility: "PUBLIC",
       status: "READY",
-      deletedAt: null
-    }
+      deletedAt: null,
+    },
   });
 
   if (!asset) {
     throw new AppError(
       404,
       "MEDIA_NOT_FOUND",
-      "Public media asset was not found."
+      "Public media asset was not found.",
     );
   }
 
@@ -62,20 +62,21 @@ async function loadPublicDescriptor(
       where: {
         mediaAssetId_kind: {
           mediaAssetId: asset.id,
-          kind: variantKind
-        }
-      }
+          kind: variantKind,
+        },
+      },
     });
 
     if (!variant || variant.status !== "READY") {
       throw new AppError(
         404,
         "VARIANT_NOT_FOUND",
-        "Requested media variant was not found."
+        "Requested media variant was not found.",
       );
     }
 
-    const size = variant.sizeBytes ?? await storageFileSize(variant.storageKey);
+    const size =
+      variant.sizeBytes ?? (await storageFileSize(variant.storageKey));
 
     return {
       workspaceId: asset.workspaceId,
@@ -85,11 +86,11 @@ async function loadPublicDescriptor(
       contentLength: size,
       cacheControl: "public, max-age=31536000, immutable",
       etag: `W/\"${variant.id}-${variant.updatedAt.getTime()}-${size.toString()}\"`,
-      variant: variantKind
+      variant: variantKind,
     };
   }
 
-  const size = asset.sizeBytes || await storageFileSize(asset.storageKey);
+  const size = asset.sizeBytes || (await storageFileSize(asset.storageKey));
   const etagValue =
     asset.checksumSha256 ??
     `${asset.id}-${asset.updatedAt.getTime()}-${size.toString()}`;
@@ -101,11 +102,13 @@ async function loadPublicDescriptor(
     contentType: asset.detectedContentType ?? asset.contentType,
     contentLength: size,
     cacheControl: "public, max-age=3600, stale-while-revalidate=86400",
-    etag: `\"${etagValue}\"`
+    etag: `\"${etagValue}\"`,
   };
 }
 
-async function resolvePublicDescriptor(req: Request): Promise<PublicDescriptor> {
+async function resolvePublicDescriptor(
+  req: Request,
+): Promise<PublicDescriptor> {
   const assetId = routeIdSchema.parse(req.params.assetId);
   const variantKind = variantSchema.parse(req.query.variant);
   const cacheVariant = variantKind ?? "ORIGINAL";
@@ -114,7 +117,7 @@ async function resolvePublicDescriptor(req: Request): Promise<PublicDescriptor> 
     "public-media",
     publicDescriptorCacheId(assetId, cacheVariant),
     publicDescriptorTtlSeconds(cacheVariant),
-    () => loadPublicDescriptor(assetId, variantKind)
+    () => loadPublicDescriptor(assetId, variantKind),
   );
 }
 
@@ -152,7 +155,7 @@ async function streamPublicFile(req: Request, res: Response): Promise<void> {
     descriptor.workspaceId,
     "DELIVERY_BYTES",
     descriptor.contentLength,
-    `public-delivery:${req.id}`
+    `public-delivery:${req.id}`,
   );
 
   setPublicHeaders(res, descriptor);
@@ -168,19 +171,16 @@ async function streamPublicFile(req: Request, res: Response): Promise<void> {
       sourceType: "PUBLIC_DELIVERY",
       sourceId: descriptor.assetId,
       metadata: {
-        variant: descriptor.variant ?? null
-      }
-    }).catch(error => {
-      req.log.error(
-        { err: error },
-        "failed to record public delivery usage"
-      );
+        variant: descriptor.variant ?? null,
+      },
+    }).catch((error) => {
+      req.log.error({ err: error }, "failed to record public delivery usage");
     });
   });
 
   const stream = createStorageReadStream(descriptor.storageKey);
 
-  stream.on("error", error => {
+  stream.on("error", (error) => {
     req.log.error({ err: error }, "public media stream failed");
 
     if (!res.headersSent) {

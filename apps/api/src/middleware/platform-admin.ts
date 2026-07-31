@@ -5,30 +5,27 @@ import { AppError } from "../shared/http.js";
 
 export function platformAdminEmails(): Set<string> {
   return new Set(
-    env.PLATFORM_ADMIN_EMAILS
-      .split(",")
-      .map(value => value.trim().toLowerCase())
-      .filter(Boolean)
+    env.PLATFORM_ADMIN_EMAILS.split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
   );
 }
 
-export function isPlatformAdminEmail(
-  normalizedEmail: string
-): boolean {
+export function isPlatformAdminEmail(normalizedEmail: string): boolean {
   return platformAdminEmails().has(normalizedEmail);
 }
 
 export async function requirePlatformAdmin(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     if (req.auth?.principalType !== "USER") {
       throw new AppError(
         403,
         "PLATFORM_ADMIN_REQUIRED",
-        "Platform administrator access is required."
+        "Platform administrator access is required.",
       );
     }
 
@@ -38,20 +35,20 @@ export async function requirePlatformAdmin(
       throw new AppError(
         403,
         "PLATFORM_ADMIN_NOT_CONFIGURED",
-        "Platform administrator access is not configured."
+        "Platform administrator access is not configured.",
       );
     }
 
     const user = await prisma.user.findUnique({
       where: { id: req.auth.userId },
-      select: { normalizedEmail: true }
+      select: { normalizedEmail: true },
     });
 
     if (!user || !allowed.has(user.normalizedEmail)) {
       throw new AppError(
         403,
         "PLATFORM_ADMIN_REQUIRED",
-        "Platform administrator access is required."
+        "Platform administrator access is required.",
       );
     }
 

@@ -12,9 +12,7 @@ export class MediaPlatformError extends Error {
 }
 
 function normalizeVisibility(value) {
-  return String(value).toUpperCase() === "PRIVATE"
-    ? "PRIVATE"
-    : "PUBLIC";
+  return String(value).toUpperCase() === "PRIVATE" ? "PRIVATE" : "PUBLIC";
 }
 
 export class MediaPlatformClient {
@@ -24,17 +22,14 @@ export class MediaPlatformClient {
 
     if (!this.baseUrl || !this.apiKey) {
       throw new Error(
-        "MEDIA_PLATFORM_API_URL and MEDIA_PLATFORM_API_KEY are required."
+        "MEDIA_PLATFORM_API_URL and MEDIA_PLATFORM_API_KEY are required.",
       );
     }
   }
 
   async request(path, init = {}) {
     const headers = new Headers(init.headers);
-    headers.set(
-      "Authorization",
-      `Bearer ${this.apiKey}`
-    );
+    headers.set("Authorization", `Bearer ${this.apiKey}`);
     headers.set("Accept", "application/json");
 
     if (
@@ -45,24 +40,20 @@ export class MediaPlatformClient {
       headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(
-      `${this.baseUrl}${path}`,
-      {
-        ...init,
-        headers
-      }
-    );
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers,
+    });
 
     if (!response.ok) {
-      const payload =
-        await response.json().catch(() => null);
+      const payload = await response.json().catch(() => null);
 
       throw new MediaPlatformError(
         payload?.error?.message ??
           `Media Platform request failed with HTTP ${response.status}.`,
         response.status,
         payload?.error?.code ?? "HTTP_ERROR",
-        payload?.error ?? payload
+        payload?.error ?? payload,
       );
     }
 
@@ -76,7 +67,7 @@ export class MediaPlatformClient {
     sizeBytes,
     folderId = null,
     checksumSha256,
-    visibility = "PUBLIC"
+    visibility = "PUBLIC",
   }) {
     return this.request("/api/v1/uploads", {
       method: "POST",
@@ -85,12 +76,9 @@ export class MediaPlatformClient {
         contentType,
         sizeBytes,
         folderId,
-        visibility:
-          normalizeVisibility(visibility),
-        ...(checksumSha256
-          ? { checksumSha256 }
-          : {})
-      })
+        visibility: normalizeVisibility(visibility),
+        ...(checksumSha256 ? { checksumSha256 } : {}),
+      }),
     });
   }
 
@@ -100,15 +88,14 @@ export class MediaPlatformClient {
       contentType,
       folderId = null,
       checksumSha256,
-      visibility = "PUBLIC"
-    } = {}
+      visibility = "PUBLIC",
+    } = {},
   ) {
     if (!contentType) {
       throw new Error("contentType is required.");
     }
 
-    const normalizedVisibility =
-      normalizeVisibility(visibility);
+    const normalizedVisibility = normalizeVisibility(visibility);
 
     const fileInfo = await stat(filePath);
     const created = await this.createUpload({
@@ -117,66 +104,38 @@ export class MediaPlatformClient {
       sizeBytes: fileInfo.size,
       folderId,
       checksumSha256,
-      visibility: normalizedVisibility
+      visibility: normalizedVisibility,
     });
 
-    const {
-      uploadId,
-      assetId,
-      chunkSizeBytes,
-      expectedChunks
-    } = created.data;
+    const { uploadId, assetId, chunkSizeBytes, expectedChunks } = created.data;
 
     const handle = await open(filePath, "r");
 
     try {
-      for (
-        let chunkIndex = 0;
-        chunkIndex < expectedChunks;
-        chunkIndex += 1
-      ) {
-        const offset =
-          chunkIndex * chunkSizeBytes;
-        const length = Math.min(
-          chunkSizeBytes,
-          fileInfo.size - offset
-        );
-        const chunk =
-          Buffer.allocUnsafe(length);
+      for (let chunkIndex = 0; chunkIndex < expectedChunks; chunkIndex += 1) {
+        const offset = chunkIndex * chunkSizeBytes;
+        const length = Math.min(chunkSizeBytes, fileInfo.size - offset);
+        const chunk = Buffer.allocUnsafe(length);
 
-        const { bytesRead } =
-          await handle.read(
-            chunk,
-            0,
-            length,
-            offset
-          );
+        const { bytesRead } = await handle.read(chunk, 0, length, offset);
 
         if (bytesRead !== length) {
-          throw new Error(
-            `Expected ${length} bytes but read ${bytesRead}.`
-          );
+          throw new Error(`Expected ${length} bytes but read ${bytesRead}.`);
         }
 
-        await this.request(
-          `/api/v1/uploads/${uploadId}/chunks/${chunkIndex}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type":
-                "application/octet-stream",
-              "Content-Length":
-                String(chunk.byteLength)
-            },
-            body: chunk
-          }
-        );
+        await this.request(`/api/v1/uploads/${uploadId}/chunks/${chunkIndex}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/octet-stream",
+            "Content-Length": String(chunk.byteLength),
+          },
+          body: chunk,
+        });
       }
     } catch (error) {
-      await this.request(
-        `/api/v1/uploads/${uploadId}`,
-        { method: "DELETE" }
-      ).catch(() => null);
+      await this.request(`/api/v1/uploads/${uploadId}`, {
+        method: "DELETE",
+      }).catch(() => null);
 
       throw error;
     } finally {
@@ -187,31 +146,21 @@ export class MediaPlatformClient {
       `/api/v1/uploads/${uploadId}/complete`,
       {
         method: "POST",
-        body: JSON.stringify(
-          checksumSha256
-            ? { checksumSha256 }
-            : {}
-        )
-      }
+        body: JSON.stringify(checksumSha256 ? { checksumSha256 } : {}),
+      },
     );
 
     return {
       uploadId,
       assetId,
       visibility: normalizedVisibility,
-      ...completed.data
+      ...completed.data,
     };
   }
 
-  listMedia({
-    limit = 40,
-    cursor,
-    search,
-    folderId,
-    status
-  } = {}) {
+  listMedia({ limit = 40, cursor, search, folderId, status } = {}) {
     const query = new URLSearchParams({
-      limit: String(limit)
+      limit: String(limit),
     });
 
     if (cursor) query.set("cursor", cursor);
@@ -223,56 +172,37 @@ export class MediaPlatformClient {
   }
 
   getMedia(assetId) {
-    return this.request(
-      `/api/v1/media/${encodeURIComponent(assetId)}`
-    );
+    return this.request(`/api/v1/media/${encodeURIComponent(assetId)}`);
   }
 
-  async createDeliveryUrl(
-    assetId,
-    disposition = "inline"
-  ) {
+  async createDeliveryUrl(assetId, disposition = "inline") {
     const payload = await this.request(
       `/api/v1/media/${encodeURIComponent(assetId)}/delivery-token`,
       {
         method: "POST",
-        body: JSON.stringify({ disposition })
-      }
+        body: JSON.stringify({ disposition }),
+      },
     );
 
     return `${this.baseUrl}${payload.data.path}`;
   }
 
   setVisibility(assetId, visibility) {
-    return this.request(
-      `/api/v1/media/${encodeURIComponent(assetId)}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify({
-          visibility:
-            normalizeVisibility(visibility)
-        })
-      }
-    );
+    return this.request(`/api/v1/media/${encodeURIComponent(assetId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        visibility: normalizeVisibility(visibility),
+      }),
+    });
   }
 
   async makePublic(assetId) {
-    const updated =
-      await this.setVisibility(
-        assetId,
-        "PUBLIC"
-      );
+    const updated = await this.setVisibility(assetId, "PUBLIC");
 
-    return (
-      updated.data.imgUrl ??
-      updated.data.fileUrl
-    );
+    return updated.data.imgUrl ?? updated.data.fileUrl;
   }
 
   makePrivate(assetId) {
-    return this.setVisibility(
-      assetId,
-      "PRIVATE"
-    );
+    return this.setVisibility(assetId, "PRIVATE");
   }
 }

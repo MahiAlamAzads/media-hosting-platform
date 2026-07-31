@@ -6,15 +6,15 @@ async function releaseReservationRows(input: {
   workspaceId: string;
   status: "RELEASED" | "EXPIRED";
 }): Promise<void> {
-  await prisma.$transaction(async tx => {
+  await prisma.$transaction(async (tx) => {
     const storage = await tx.quotaReservation.aggregate({
       where: {
         sourceId: input.sourceId,
         workspaceId: input.workspaceId,
         metric: "STORAGE_BYTES",
-        status: "ACTIVE"
+        status: "ACTIVE",
       },
-      _sum: { quantity: true }
+      _sum: { quantity: true },
     });
 
     const bytes = storage._sum.quantity ?? 0n;
@@ -34,12 +34,12 @@ async function releaseReservationRows(input: {
       where: {
         sourceId: input.sourceId,
         workspaceId: input.workspaceId,
-        status: "ACTIVE"
+        status: "ACTIVE",
       },
       data: {
         status: input.status,
-        releasedAt: new Date()
-      }
+        releasedAt: new Date(),
+      },
     });
   });
 }
@@ -47,20 +47,20 @@ async function releaseReservationRows(input: {
 async function releaseUpload(sourceId: string): Promise<boolean> {
   const reservation = await prisma.quotaReservation.findFirst({
     where: { sourceId, status: "ACTIVE" },
-    select: { workspaceId: true }
+    select: { workspaceId: true },
   });
 
   if (!reservation) return false;
 
   const session = await prisma.uploadSession.findUnique({
-    where: { id: sourceId }
+    where: { id: sourceId },
   });
 
   if (!session) {
     await releaseReservationRows({
       sourceId,
       workspaceId: reservation.workspaceId,
-      status: "EXPIRED"
+      status: "EXPIRED",
     });
     return true;
   }
@@ -69,26 +69,23 @@ async function releaseUpload(sourceId: string): Promise<boolean> {
     await releaseReservationRows({
       sourceId,
       workspaceId: session.workspaceId,
-      status:
-        session.status === "EXPIRED"
-          ? "EXPIRED"
-          : "RELEASED"
+      status: session.status === "EXPIRED" ? "EXPIRED" : "RELEASED",
     });
     return true;
   }
 
   const chunks = await prisma.uploadChunk.findMany({
     where: { uploadSessionId: session.id },
-    select: { storageKey: true }
+    select: { storageKey: true },
   });
 
   const claimed = await prisma.uploadSession.updateMany({
     where: {
       id: session.id,
       status: { in: ["ACTIVE", "COMPLETING"] },
-      expiresAt: { lte: new Date() }
+      expiresAt: { lte: new Date() },
     },
-    data: { status: "EXPIRED" }
+    data: { status: "EXPIRED" },
   });
 
   if (claimed.count !== 1) return false;
@@ -96,22 +93,22 @@ async function releaseUpload(sourceId: string): Promise<boolean> {
   await releaseReservationRows({
     sourceId,
     workspaceId: session.workspaceId,
-    status: "EXPIRED"
+    status: "EXPIRED",
   });
 
   await prisma.mediaAsset.updateMany({
     where: {
       id: session.mediaAssetId,
-      status: { in: ["UPLOADING", "PROCESSING"] }
+      status: { in: ["UPLOADING", "PROCESSING"] },
     },
     data: {
       status: "FAILED",
-      deletedAt: new Date()
-    }
+      deletedAt: new Date(),
+    },
   });
 
   await Promise.allSettled(
-    chunks.map(chunk => removeStorageFile(chunk.storageKey))
+    chunks.map((chunk) => removeStorageFile(chunk.storageKey)),
   );
 
   return true;
@@ -121,12 +118,12 @@ async function main(): Promise<void> {
   const expired = await prisma.quotaReservation.findMany({
     where: {
       status: "ACTIVE",
-      expiresAt: { lte: new Date() }
+      expiresAt: { lte: new Date() },
     },
     distinct: ["sourceId"],
     orderBy: { expiresAt: "asc" },
     take: 200,
-    select: { sourceId: true }
+    select: { sourceId: true },
   });
 
   let released = 0;

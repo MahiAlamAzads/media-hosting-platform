@@ -1,19 +1,16 @@
 import { prisma } from "@media/database";
 import { AppError } from "../../shared/http.js";
-import type {
-  BillingCurrencyName,
-  UsageMetricName
-} from "./billing.types.js";
+import type { BillingCurrencyName, UsageMetricName } from "./billing.types.js";
 import {
   calculateUsagePercent,
   formatMoneyMinor,
   projectUsage,
-  usageState
+  usageState,
 } from "./billing.utils.js";
 import {
   highestUsageThreshold,
   nextUsageThreshold,
-  usageThresholdMessage
+  usageThresholdMessage,
 } from "./usage-alert-policy.js";
 
 const prepaidBillableMetrics = new Set<UsageMetricName>([
@@ -23,7 +20,7 @@ const prepaidBillableMetrics = new Set<UsageMetricName>([
   "API_REQUESTS",
   "IMAGE_TRANSFORMATIONS",
   "VIDEO_PROCESSING_SECONDS",
-  "PROCESSING_CPU_MILLISECONDS"
+  "PROCESSING_CPU_MILLISECONDS",
 ]);
 
 const countMetrics = new Set<UsageMetricName>([
@@ -31,7 +28,7 @@ const countMetrics = new Set<UsageMetricName>([
   "FOLDERS",
   "WORKSPACE_MEMBERS",
   "API_KEYS",
-  "CONCURRENT_JOBS"
+  "CONCURRENT_JOBS",
 ]);
 
 function calculateOverage(input: {
@@ -50,7 +47,7 @@ function calculateOverage(input: {
     return {
       units: "0",
       amountMinor: "0",
-      formatted: formatMoneyMinor(0n, input.currency)
+      formatted: formatMoneyMinor(0n, input.currency),
     };
   }
 
@@ -61,13 +58,11 @@ function calculateOverage(input: {
   return {
     units: units.toString(),
     amountMinor: amountMinor.toString(),
-    formatted: formatMoneyMinor(amountMinor, input.currency)
+    formatted: formatMoneyMinor(amountMinor, input.currency),
   };
 }
 
-export async function getWorkspaceUsageSnapshot(
-  workspaceId: string
-) {
+export async function getWorkspaceUsageSnapshot(workspaceId: string) {
   const subscription = await prisma.workspaceSubscription.findUnique({
     where: { workspaceId },
     include: {
@@ -79,8 +74,8 @@ export async function getWorkspaceUsageSnapshot(
           billingPreference: {
             select: {
               revenueModel: true,
-              subscriptionTerm: true
-            }
+              subscriptionTerm: true,
+            },
           },
           prepaidWallet: {
             select: {
@@ -88,40 +83,40 @@ export async function getWorkspaceUsageSnapshot(
               status: true,
               balanceMinor: true,
               reservedMinor: true,
-              lowBalanceThresholdMinor: true
-            }
+              lowBalanceThresholdMinor: true,
+            },
           },
           paygPolicy: {
             select: {
               status: true,
               defaultPaymentMethod: {
-                select: { status: true }
+                select: { status: true },
               },
               metrics: {
                 where: { enabled: true },
-                select: { metric: true }
-              }
-            }
-          }
-        }
+                select: { metric: true },
+              },
+            },
+          },
+        },
       },
       planVersion: {
         include: {
           plan: true,
           prices: true,
           entitlements: {
-            orderBy: { metric: "asc" }
-          }
-        }
-      }
-    }
+            orderBy: { metric: "asc" },
+          },
+        },
+      },
+    },
   });
 
   if (!subscription) {
     throw new AppError(
       503,
       "BILLING_NOT_CONFIGURED",
-      "Workspace billing is not configured."
+      "Workspace billing is not configured.",
     );
   }
 
@@ -132,44 +127,44 @@ export async function getWorkspaceUsageSnapshot(
     members,
     apiKeys,
     activeUploads,
-    processingAssets
+    processingAssets,
   ] = await prisma.$transaction([
     prisma.usageAggregate.findMany({
       where: {
         workspaceId,
         periodStart: subscription.periodStart,
-        periodEnd: subscription.periodEnd
-      }
+        periodEnd: subscription.periodEnd,
+      },
     }),
     prisma.mediaAsset.count({
       where: {
         workspaceId,
         status: { in: ["UPLOADING", "PROCESSING", "READY"] },
-        deletedAt: null
-      }
+        deletedAt: null,
+      },
     }),
     prisma.folder.count({ where: { workspaceId } }),
     prisma.workspaceMember.count({ where: { workspaceId } }),
     prisma.apiKey.count({
-      where: { workspaceId, revokedAt: null }
+      where: { workspaceId, revokedAt: null },
     }),
     prisma.uploadSession.count({
       where: {
         workspaceId,
-        status: { in: ["ACTIVE", "COMPLETING"] }
-      }
+        status: { in: ["ACTIVE", "COMPLETING"] },
+      },
     }),
     prisma.mediaAsset.count({
       where: {
         workspaceId,
         status: "PROCESSING",
-        deletedAt: null
-      }
-    })
+        deletedAt: null,
+      },
+    }),
   ]);
 
   const aggregateMap = new Map(
-    aggregates.map(value => [value.metric, value.quantity])
+    aggregates.map((value) => [value.metric, value.quantity]),
   );
 
   const directUsage = new Map<UsageMetricName, bigint>([
@@ -179,73 +174,68 @@ export async function getWorkspaceUsageSnapshot(
     ["WORKSPACE_MEMBERS", BigInt(members)],
     ["API_KEYS", BigInt(apiKeys)],
     ["CONCURRENT_JOBS", BigInt(activeUploads + processingAssets)],
-    ["MAX_FILE_SIZE_BYTES", 0n]
+    ["MAX_FILE_SIZE_BYTES", 0n],
   ]);
 
   const now = new Date();
   const currency = subscription.currency;
   const paygPolicy = subscription.workspace.paygPolicy;
   const prepaidMode =
-    subscription.workspace.billingPreference?.revenueModel ===
-      "PREPAID_PAYG";
+    subscription.workspace.billingPreference?.revenueModel === "PREPAID_PAYG";
   const wallet = subscription.workspace.prepaidWallet;
-  const paygConfigured =
-    prepaidMode &&
-    paygPolicy?.status === "ACTIVE";
+  const paygConfigured = prepaidMode && paygPolicy?.status === "ACTIVE";
   const paygOperational =
     paygConfigured &&
     Boolean(
       wallet &&
       wallet.status === "ACTIVE" &&
-      wallet.balanceMinor - wallet.reservedMinor > 0n
+      wallet.balanceMinor - wallet.reservedMinor > 0n,
     );
   const paygMetrics = new Set<UsageMetricName>(
     paygConfigured && paygPolicy
-      ? paygPolicy.metrics.map(item => item.metric as UsageMetricName)
-      : []
+      ? paygPolicy.metrics.map((item) => item.metric as UsageMetricName)
+      : [],
   );
 
-  const metrics = subscription.planVersion.entitlements.map(entitlement => {
+  const metrics = subscription.planVersion.entitlements.map((entitlement) => {
     const metric = entitlement.metric as UsageMetricName;
-    const current = countMetrics.has(metric) ||
+    const current =
+      countMetrics.has(metric) ||
       metric === "STORAGE_BYTES" ||
       metric === "MAX_FILE_SIZE_BYTES"
-      ? directUsage.get(metric) ?? 0n
-      : aggregateMap.get(metric) ?? 0n;
+        ? (directUsage.get(metric) ?? 0n)
+        : (aggregateMap.get(metric) ?? 0n);
 
-    const planLimit = metric === "STORAGE_BYTES" &&
+    const planLimit =
+      metric === "STORAGE_BYTES" &&
       subscription.workspace.storageLimitBytes > entitlement.includedAmount
-      ? subscription.workspace.storageLimitBytes
-      : entitlement.includedAmount;
-    const limit = prepaidMode && prepaidBillableMetrics.has(metric)
-      ? 0n
-      : planLimit;
+        ? subscription.workspace.storageLimitBytes
+        : entitlement.includedAmount;
+    const limit =
+      prepaidMode && prepaidBillableMetrics.has(metric) ? 0n : planLimit;
 
-    const projected = countMetrics.has(metric) ||
+    const projected =
+      countMetrics.has(metric) ||
       metric === "STORAGE_BYTES" ||
       metric === "MAX_FILE_SIZE_BYTES"
-      ? current
-      : projectUsage(
-          current,
-          subscription.periodStart,
-          subscription.periodEnd,
-          now
-        );
+        ? current
+        : projectUsage(
+            current,
+            subscription.periodStart,
+            subscription.periodEnd,
+            now,
+          );
 
     const percent = calculateUsagePercent(current, limit);
     const projectedPercent = calculateUsagePercent(projected, limit);
-    const overagePrice = currency === "BDT"
-      ? entitlement.overageBdtMinor
-      : entitlement.overageUsdMinor;
+    const overagePrice =
+      currency === "BDT"
+        ? entitlement.overageBdtMinor
+        : entitlement.overageUsdMinor;
 
     const paygEnabled = paygMetrics.has(metric);
-    const threshold = paygEnabled
-      ? null
-      : highestUsageThreshold(percent);
-    const blocked =
-      !paygEnabled &&
-      percent >= 100 &&
-      entitlement.hardLimit;
+    const threshold = paygEnabled ? null : highestUsageThreshold(percent);
+    const blocked = !paygEnabled && percent >= 100 && entitlement.hardLimit;
 
     return {
       metric,
@@ -266,7 +256,7 @@ export async function getWorkspaceUsageSnapshot(
             metric,
             threshold,
             blocked,
-            paygEnabled
+            paygEnabled,
           })
         : null,
       projected: projected.toString(),
@@ -279,8 +269,8 @@ export async function getWorkspaceUsageSnapshot(
         limit,
         unit: entitlement.overageUnit,
         priceMinor: overagePrice,
-        currency
-      })
+        currency,
+      }),
     };
   });
 
@@ -288,14 +278,12 @@ export async function getWorkspaceUsageSnapshot(
     plan: {
       code: subscription.planVersion.plan.code,
       name: subscription.planVersion.plan.name,
-      version: subscription.planVersion.version
+      version: subscription.planVersion.version,
     },
     payg: {
       status: paygPolicy?.status ?? "DISABLED",
       operational: paygOperational,
-      fundingMode: prepaidMode
-        ? "PREPAID_WALLET"
-        : "SAVED_PAYMENT_METHOD",
+      fundingMode: prepaidMode ? "PREPAID_WALLET" : "SAVED_PAYMENT_METHOD",
       enabledMetrics: [...paygMetrics],
       wallet: wallet
         ? {
@@ -303,12 +291,13 @@ export async function getWorkspaceUsageSnapshot(
             status: wallet.status,
             balanceMinor: wallet.balanceMinor.toString(),
             reservedMinor: wallet.reservedMinor.toString(),
-            availableMinor:
-              (wallet.balanceMinor - wallet.reservedMinor).toString(),
+            availableMinor: (
+              wallet.balanceMinor - wallet.reservedMinor
+            ).toString(),
             lowBalanceThresholdMinor:
-              wallet.lowBalanceThresholdMinor.toString()
+              wallet.lowBalanceThresholdMinor.toString(),
           }
-        : null
+        : null,
     },
     subscription: {
       status: subscription.status,
@@ -320,8 +309,8 @@ export async function getWorkspaceUsageSnapshot(
       periodStart: subscription.periodStart,
       periodEnd: subscription.periodEnd,
       trialEndsAt: subscription.trialEndsAt,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
     },
-    metrics
+    metrics,
   };
 }

@@ -4,11 +4,7 @@ export const usageAlertThresholds = [70, 80, 90, 100] as const;
 export type UsageAlertThreshold = (typeof usageAlertThresholds)[number];
 
 export type UsageSeverity =
-  | "OK"
-  | "NOTICE"
-  | "WARNING"
-  | "CRITICAL"
-  | "EXCEEDED";
+  "OK" | "NOTICE" | "WARNING" | "CRITICAL" | "EXCEEDED";
 
 const metricLabels: Record<UsageMetricName, string> = {
   STORAGE_BYTES: "Storage",
@@ -23,7 +19,7 @@ const metricLabels: Record<UsageMetricName, string> = {
   WORKSPACE_MEMBERS: "Workspace seats",
   API_KEYS: "API keys",
   CONCURRENT_JOBS: "Concurrent jobs",
-  MAX_FILE_SIZE_BYTES: "Maximum file size"
+  MAX_FILE_SIZE_BYTES: "Maximum file size",
 };
 
 const blockedMessages: Record<UsageMetricName, string> = {
@@ -51,15 +47,14 @@ const blockedMessages: Record<UsageMetricName, string> = {
     "New API keys are blocked until a key is revoked or the plan is upgraded.",
   CONCURRENT_JOBS:
     "New processing jobs are blocked until an active job completes.",
-  MAX_FILE_SIZE_BYTES:
-    "Files larger than the plan limit are blocked."
+  MAX_FILE_SIZE_BYTES: "Files larger than the plan limit are blocked.",
 };
 
 function formatRatio(
   value: bigint,
   divisor: bigint,
   suffix: string,
-  decimals: 1 | 2
+  decimals: 1 | 2,
 ): string {
   const scale = decimals === 1 ? 10n : 100n;
   const scaled = (value * scale) / divisor;
@@ -70,7 +65,7 @@ function formatRatio(
 
 export function formatUsageMetricValue(
   metric: UsageMetricName,
-  rawValue: string
+  rawValue: string,
 ): string {
   const value = BigInt(rawValue);
 
@@ -85,13 +80,11 @@ export function formatUsageMetricValue(
       [1_099_511_627_776n, "TB"],
       [1_073_741_824n, "GB"],
       [1_048_576n, "MB"],
-      [1_024n, "KB"]
+      [1_024n, "KB"],
     ];
 
     const unit = units.find(([divisor]) => value >= divisor);
-    return unit
-      ? formatRatio(value, unit[0], unit[1], 1)
-      : `${value} B`;
+    return unit ? formatRatio(value, unit[0], unit[1], 1) : `${value} B`;
   }
 
   if (metric === "VIDEO_PROCESSING_SECONDS") {
@@ -106,7 +99,7 @@ export function formatUsageMetricValue(
 }
 
 export function highestUsageThreshold(
-  percent: number
+  percent: number,
 ): UsageAlertThreshold | null {
   if (percent >= 100) return 100;
   if (percent >= 90) return 90;
@@ -116,9 +109,9 @@ export function highestUsageThreshold(
 }
 
 export function nextUsageThreshold(
-  percent: number
+  percent: number,
 ): UsageAlertThreshold | null {
-  return usageAlertThresholds.find(threshold => percent < threshold) ?? null;
+  return usageAlertThresholds.find((threshold) => percent < threshold) ?? null;
 }
 
 export function usageSeverity(percent: number): UsageSeverity {

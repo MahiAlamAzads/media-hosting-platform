@@ -1,7 +1,9 @@
 import { prisma } from "./client.js";
 
 async function main(): Promise<void> {
-  const result = await prisma.$queryRaw<Array<{ now: Date }>>`SELECT NOW() AS now`;
+  const result = await prisma.$queryRaw<
+    Array<{ now: Date }>
+  >`SELECT NOW() AS now`;
   console.log("Database connection successful:", result[0]?.now ?? "unknown");
 }
 

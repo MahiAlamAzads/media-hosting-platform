@@ -4,21 +4,21 @@ import type { DeliveryAsset } from "./delivery.types.js";
 export interface DeliveryRepository {
   findReadyAsset(
     assetId: string,
-    workspaceId: string
+    workspaceId: string,
   ): Promise<DeliveryAsset | null>;
 }
 
 export class PrismaDeliveryRepository implements DeliveryRepository {
   async findReadyAsset(
     assetId: string,
-    workspaceId: string
+    workspaceId: string,
   ): Promise<DeliveryAsset | null> {
     return prisma.mediaAsset.findFirst({
       where: {
         id: assetId,
         workspaceId,
         status: "READY",
-        deletedAt: null
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -26,8 +26,8 @@ export class PrismaDeliveryRepository implements DeliveryRepository {
         originalFilename: true,
         storageKey: true,
         contentType: true,
-        detectedContentType: true
-      }
+        detectedContentType: true,
+      },
     });
   }
 }

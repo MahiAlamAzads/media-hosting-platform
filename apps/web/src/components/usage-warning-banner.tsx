@@ -7,7 +7,7 @@ import {
   metricLabels,
   usageAlertClass,
   formatMoneyMinor,
-  type UsageMetricName
+  type UsageMetricName,
 } from "@/lib/billing-format";
 
 type UsageWarning = {
@@ -56,7 +56,7 @@ export function UsageWarningBanner() {
     async function load(): Promise<void> {
       try {
         const response = await apiRequest<UsageResponse>(
-          "/api/v1/billing/usage"
+          "/api/v1/billing/usage",
         );
 
         if (!active) return;
@@ -64,16 +64,14 @@ export function UsageWarningBanner() {
         setMetrics(
           response.data.metrics
             .filter(
-              metric =>
-                metric.threshold !== null &&
-                !metric.paygEnabled
+              (metric) => metric.threshold !== null && !metric.paygEnabled,
             )
-            .sort((left, right) => right.percent - left.percent)
+            .sort((left, right) => right.percent - left.percent),
         );
         setPeriodEnd(response.data.subscription.periodEnd);
         setWallet(response.data.payg.wallet);
         setPrepaidMode(
-          response.data.subscription.revenueModel === "PREPAID_PAYG"
+          response.data.subscription.revenueModel === "PREPAID_PAYG",
         );
       } catch {
         // Billing may be temporarily unavailable while the account loads.
@@ -101,12 +99,10 @@ export function UsageWarningBanner() {
   const highest = metrics[0];
   const remaining = useMemo(
     () => Math.max(0, metrics.length - 1),
-    [metrics.length]
+    [metrics.length],
   );
 
-  const availableMinor = wallet
-    ? BigInt(wallet.availableMinor)
-    : BigInt(0);
+  const availableMinor = wallet ? BigInt(wallet.availableMinor) : BigInt(0);
   const lowBalanceMinor = wallet
     ? BigInt(wallet.lowBalanceThresholdMinor)
     : BigInt(0);
@@ -149,9 +145,11 @@ export function UsageWarningBanner() {
                 Available balance: {formatMoneyMinor(available, currency)}
                 {walletLow && wallet && (
                   <>
-                    {" "}· Low-balance threshold: {formatMoneyMinor(
+                    {" "}
+                    · Low-balance threshold:{" "}
+                    {formatMoneyMinor(
                       wallet.lowBalanceThresholdMinor,
-                      wallet.currency
+                      wallet.currency,
                     )}
                   </>
                 )}
@@ -195,16 +193,15 @@ export function UsageWarningBanner() {
                   ? `${metricLabels[highest.metric]} PAYG is active`
                   : `${metricLabels[highest.metric]} reached ${highest.threshold}%`}
             </div>
-            <div className="small mt-1">
-              {highest.warningMessage}
-            </div>
+            <div className="small mt-1">{highest.warningMessage}</div>
             <div className="small mt-2">
               {formatMetricValue(highest.metric, highest.current)} of{" "}
               {formatMetricValue(highest.metric, highest.limit)} used.
               {periodEnd && (
                 <>
-                  {" "}Current period ends{" "}
-                  {new Date(periodEnd).toLocaleDateString()}.
+                  {" "}
+                  Current period ends {new Date(periodEnd).toLocaleDateString()}
+                  .
                 </>
               )}
             </div>

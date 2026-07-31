@@ -4,13 +4,16 @@ import { useState } from "react";
 import type { IntegrationExample } from "@/lib/integration-examples";
 
 export function IntegrationExampleTabs({
-  examples
+  examples,
 }: {
   examples: IntegrationExample[];
 }) {
-  const [activeId, setActiveId] = useState<IntegrationExample["id"]>(examples[0]?.id ?? "nextjs");
+  const [activeId, setActiveId] = useState<IntegrationExample["id"]>(
+    examples[0]?.id ?? "nextjs",
+  );
   const [copied, setCopied] = useState(false);
-  const active = examples.find(example => example.id === activeId) ?? examples[0];
+  const active =
+    examples.find((example) => example.id === activeId) ?? examples[0];
 
   if (!active) return null;
 
@@ -23,8 +26,12 @@ export function IntegrationExampleTabs({
   return (
     <div className="card integration-example-card">
       <div className="card-header p-0">
-        <div className="integration-tabs" role="tablist" aria-label="Integration language">
-          {examples.map(example => (
+        <div
+          className="integration-tabs"
+          role="tablist"
+          aria-label="Integration language"
+        >
+          {examples.map((example) => (
             <button
               type="button"
               role="tab"
@@ -50,11 +57,19 @@ export function IntegrationExampleTabs({
             <code>{active.install}</code>
           </div>
           <div className="d-flex gap-2 align-items-start flex-wrap">
-            <button className="btn btn-outline-secondary btn-sm" type="button" onClick={copyCode}>
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              type="button"
+              onClick={copyCode}
+            >
               <i className={`bi ${copied ? "bi-check2" : "bi-copy"} me-1`} />
               {copied ? "Copied" : "Copy"}
             </button>
-            <a className="btn btn-primary btn-sm" href={active.downloadHref} download>
+            <a
+              className="btn btn-primary btn-sm"
+              href={active.downloadHref}
+              download
+            >
               <i className="bi bi-download me-1" />
               Download
             </a>
@@ -66,7 +81,9 @@ export function IntegrationExampleTabs({
         <span>{active.filename}</span>
         <span>{active.label}</span>
       </div>
-      <pre className="integration-code-block"><code>{active.code}</code></pre>
+      <pre className="integration-code-block">
+        <code>{active.code}</code>
+      </pre>
     </div>
   );
 }

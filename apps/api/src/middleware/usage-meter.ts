@@ -4,7 +4,7 @@ import { recordUsage } from "../modules/billing/usage.service.js";
 export function meterAuthenticatedApiRequest(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   res.once("finish", () => {
     if (
@@ -28,13 +28,10 @@ export function meterAuthenticatedApiRequest(
         path: req.originalUrl.split("?")[0],
         statusCode: res.statusCode,
         principalType: req.auth.principalType,
-        apiKeyId: req.auth.apiKeyId ?? null
-      }
-    }).catch(error => {
-      req.log.error(
-        { err: error },
-        "failed to record API request usage"
-      );
+        apiKeyId: req.auth.apiKeyId ?? null,
+      },
+    }).catch((error) => {
+      req.log.error({ err: error }, "failed to record API request usage");
     });
   });
 

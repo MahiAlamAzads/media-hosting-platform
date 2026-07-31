@@ -68,16 +68,14 @@ describe("Phase 21 Redis performance contracts", () => {
 
     const readinessBlock = app.slice(
       app.indexOf('app.get("/health/ready"'),
-      app.indexOf('app.get("/health/redis"')
+      app.indexOf('app.get("/health/redis"'),
     );
     expect(readinessBlock).not.toContain("dependencies");
-    expect(readinessBlock).toContain(
-      'status: ready ? "ready" : "not_ready"'
-    );
+    expect(readinessBlock).toContain('status: ready ? "ready" : "not_ready"');
 
     const healthBlock = app.slice(
       app.indexOf('app.get("/health/redis"'),
-      app.indexOf('app.get("/health/storage"')
+      app.indexOf('app.get("/health/storage"'),
     );
     expect(healthBlock).not.toContain("lastError");
     expect(server).toContain("Initial Redis connection failed.");

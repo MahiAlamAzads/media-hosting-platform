@@ -16,15 +16,17 @@ async function main(): Promise<void> {
       failed += 1;
       console.error(`Failed to process ${assetId}:`, error);
 
-      await prisma.mediaAsset.updateMany({
-        where: { id: assetId, status: "PROCESSING" },
-        data: { status: "READY" }
-      }).catch(() => undefined);
+      await prisma.mediaAsset
+        .updateMany({
+          where: { id: assetId, status: "PROCESSING" },
+          data: { status: "READY" },
+        })
+        .catch(() => undefined);
     }
   }
 
   console.log(
-    `Media processing complete. processed=${processed} failed=${failed}`
+    `Media processing complete. processed=${processed} failed=${failed}`,
   );
 }
 

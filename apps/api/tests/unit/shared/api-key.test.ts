@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createApiKeyMaterial,
   hashApiKeySecret,
-  parseApiKey
+  parseApiKey,
 } from "../../../src/shared/api-key.js";
 
 describe("API key helpers", () => {
@@ -20,8 +20,8 @@ describe("API key helpers", () => {
     "mh_live_invalid",
     "Bearer mh_live_key.secret",
     "mh_test_key.secret",
-    "mh_live_short.short"
-  ])("rejects malformed key %s", rawKey => {
+    "mh_live_short.short",
+  ])("rejects malformed key %s", (rawKey) => {
     expect(parseApiKey(rawKey)).toBeNull();
   });
 });

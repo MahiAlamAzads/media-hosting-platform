@@ -14,7 +14,7 @@ export function clearAccessToken(): void {
 async function refreshAccessToken(): Promise<string | null> {
   const response = await fetch(`${API_URL}/api/v1/auth/refresh`, {
     method: "POST",
-    credentials: "include"
+    credentials: "include",
   });
   if (!response.ok) {
     clearAccessToken();
@@ -28,7 +28,7 @@ async function refreshAccessToken(): Promise<string | null> {
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
-  retry = true
+  retry = true,
 ): Promise<T> {
   const headers = new Headers(init.headers);
   const token = getAccessToken();
@@ -40,7 +40,7 @@ export async function apiRequest<T>(
   let response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers,
-    credentials: "include"
+    credentials: "include",
   });
 
   if (response.status === 401 && retry && !path.includes("/auth/")) {
@@ -50,15 +50,20 @@ export async function apiRequest<T>(
       response = await fetch(`${API_URL}${path}`, {
         ...init,
         headers,
-        credentials: "include"
+        credentials: "include",
       });
     }
   }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    const error = new Error(payload?.error?.message ?? `Request failed (${response.status}).`);
-    Object.assign(error, { status: response.status, code: payload?.error?.code });
+    const error = new Error(
+      payload?.error?.message ?? `Request failed (${response.status}).`,
+    );
+    Object.assign(error, {
+      status: response.status,
+      code: payload?.error?.code,
+    });
     throw error;
   }
   if (response.status === 204) return undefined as T;
@@ -67,7 +72,7 @@ export async function apiRequest<T>(
 export async function logout(): Promise<void> {
   await fetch(`${API_URL}/api/v1/auth/logout`, {
     method: "POST",
-    credentials: "include"
+    credentials: "include",
   }).catch(() => undefined);
   clearAccessToken();
 }

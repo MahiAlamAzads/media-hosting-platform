@@ -5,7 +5,7 @@ import { applyPaidPayment } from "../modules/payments/payment.service.js";
 import { validateGatewayRecord } from "../modules/payments/payment.utils.js";
 import {
   querySslcommerzTransaction,
-  validateSslcommerzPayment
+  validateSslcommerzPayment,
 } from "../modules/payments/sslcommerz.service.js";
 
 if (!env.SSLCOMMERZ_ENABLED) {
@@ -18,10 +18,10 @@ const attempts = await prisma.paymentAttempt.findMany({
     method: "SSLCOMMERZ",
     status: "PROCESSING",
     providerTransactionId: { not: null },
-    createdAt: { lte: new Date(Date.now() - 5 * 60 * 1000) }
+    createdAt: { lte: new Date(Date.now() - 5 * 60 * 1000) },
   },
   include: { invoice: true },
-  take: 100
+  take: 100,
 });
 
 let paid = 0;
@@ -33,13 +33,13 @@ for (const attempt of attempts) {
 
   try {
     const records = await querySslcommerzTransaction(transactionId);
-    const record = records.find(item =>
-      new Set(["VALID", "VALIDATED"]).has(String(item.status))
+    const record = records.find((item) =>
+      new Set(["VALID", "VALIDATED"]).has(String(item.status)),
     );
 
     if (!record?.val_id) {
-      const terminal = records.find(item =>
-        new Set(["FAILED", "CANCELLED"]).has(String(item.status))
+      const terminal = records.find((item) =>
+        new Set(["FAILED", "CANCELLED"]).has(String(item.status)),
       );
       if (terminal) {
         await prisma.paymentAttempt.update({
@@ -47,8 +47,8 @@ for (const attempt of attempts) {
           data: {
             status: terminal.status === "CANCELLED" ? "CANCELLED" : "FAILED",
             rawValidation: terminal as Prisma.InputJsonValue,
-            completedAt: new Date()
-          }
+            completedAt: new Date(),
+          },
         });
         failed += 1;
       }
@@ -62,7 +62,7 @@ for (const attempt of attempts) {
       workspaceId: attempt.invoice.workspaceId,
       transactionId,
       currency: attempt.invoice.currency,
-      amountMinor: attempt.invoice.amountMinor
+      amountMinor: attempt.invoice.amountMinor,
     });
 
     await prisma.paymentAttempt.update({
@@ -79,8 +79,8 @@ for (const attempt of attempts) {
         status:
           risk.riskLevel === 1 && !env.SSLCOMMERZ_AUTO_APPROVE_RISKY
             ? "UNDER_REVIEW"
-            : "PROCESSING"
-      }
+            : "PROCESSING",
+      },
     });
 
     if (risk.riskLevel === 1 && !env.SSLCOMMERZ_AUTO_APPROVE_RISKY) {
@@ -89,14 +89,16 @@ for (const attempt of attempts) {
 
     await applyPaidPayment({
       paymentAttemptId: attempt.id,
-      note: "SSLCOMMERZ payment reconciled and applied."
+      note: "SSLCOMMERZ payment reconciled and applied.",
     });
     paid += 1;
   } catch (error) {
-    console.error(JSON.stringify({
-      paymentAttemptId: attempt.id,
-      error: error instanceof Error ? error.message : String(error)
-    }));
+    console.error(
+      JSON.stringify({
+        paymentAttemptId: attempt.id,
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
   }
 }
 

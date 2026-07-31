@@ -26,24 +26,25 @@ export default function EnterprisePage() {
     expectedStorageGb: "",
     expectedDeliveryGb: "",
     expectedMonthlyRequests: "",
-    message: ""
+    message: "",
   });
   const [message, setMessage] = useState("");
-  const [variant, setVariant] =
-    useState<"success" | "danger">("success");
+  const [variant, setVariant] = useState<"success" | "danger">("success");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     void apiRequest<{ data: { enterpriseInquiry: Existing } }>(
-      "/api/v1/billing/revenue-options"
-    ).then(response => {
-      setExisting(response.data.enterpriseInquiry);
-      setLoaded(true);
-    }).catch(error => {
-      setVariant("danger");
-      setMessage(error.message);
-      setLoaded(true);
-    });
+      "/api/v1/billing/revenue-options",
+    )
+      .then((response) => {
+        setExisting(response.data.enterpriseInquiry);
+        setLoaded(true);
+      })
+      .catch((error) => {
+        setVariant("danger");
+        setMessage(error.message);
+        setLoaded(true);
+      });
   }, []);
 
   async function submit(event: FormEvent): Promise<void> {
@@ -68,13 +69,15 @@ export default function EnterprisePage() {
               ? String(Math.round(Number(form.expectedDeliveryGb) * 1024 ** 3))
               : null,
             expectedMonthlyRequests: form.expectedMonthlyRequests || null,
-            message: form.message || null
-          })
-        }
+            message: form.message || null,
+          }),
+        },
       );
       setExisting(response.data);
       setVariant("success");
-      setMessage("Enterprise request submitted. Our sales team will contact you.");
+      setMessage(
+        "Enterprise request submitted. Our sales team will contact you.",
+      );
     } catch (error) {
       setVariant("danger");
       setMessage((error as Error).message);
@@ -89,13 +92,18 @@ export default function EnterprisePage() {
         title="Enterprise"
         subtitle="Request custom capacity, pricing, onboarding and service commitments."
       >
-        <a className="btn btn-outline-secondary" href="/dashboard/billing/revenue-model">
+        <a
+          className="btn btn-outline-secondary"
+          href="/dashboard/billing/revenue-model"
+        >
           Revenue options
         </a>
       </PageHeader>
       <Feedback message={message} variant={variant} />
 
-      {!loaded ? <LoadingBlock /> : existing ? (
+      {!loaded ? (
+        <LoadingBlock />
+      ) : existing ? (
         <div className="card">
           <div className="card-body p-4">
             <span className="badge text-bg-info mb-3">
@@ -123,20 +131,32 @@ export default function EnterprisePage() {
                 ["Phone", "phone", "text"],
                 ["Team size", "teamSize", "number"],
                 ["Expected storage (GB)", "expectedStorageGb", "number"],
-                ["Expected monthly delivery (GB)", "expectedDeliveryGb", "number"],
-                ["Expected monthly API requests", "expectedMonthlyRequests", "number"]
+                [
+                  "Expected monthly delivery (GB)",
+                  "expectedDeliveryGb",
+                  "number",
+                ],
+                [
+                  "Expected monthly API requests",
+                  "expectedMonthlyRequests",
+                  "number",
+                ],
               ].map(([label, key, type]) => (
                 <div className="col-md-6" key={key}>
                   <label className="form-label">{label}</label>
                   <input
                     className="form-control"
                     type={type}
-                    required={["companyName", "contactName", "email"].includes(key)}
+                    required={["companyName", "contactName", "email"].includes(
+                      key,
+                    )}
                     value={form[key as keyof typeof form]}
-                    onChange={event => setForm(current => ({
-                      ...current,
-                      [key]: event.target.value
-                    }))}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        [key]: event.target.value,
+                      }))
+                    }
                   />
                 </div>
               ))}
@@ -146,10 +166,12 @@ export default function EnterprisePage() {
                   className="form-control"
                   rows={5}
                   value={form.message}
-                  onChange={event => setForm(current => ({
-                    ...current,
-                    message: event.target.value
-                  }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      message: event.target.value,
+                    }))
+                  }
                   placeholder="Migration, compliance, uptime, support, custom domain or capacity requirements"
                 />
               </div>

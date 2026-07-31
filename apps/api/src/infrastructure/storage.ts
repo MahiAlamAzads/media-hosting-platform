@@ -8,7 +8,7 @@ import {
   rm,
   stat,
   statfs,
-  writeFile
+  writeFile,
 } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import path from "node:path";
@@ -34,14 +34,16 @@ export function resolveStorageKey(storageKey: string): string {
     throw new AppError(
       400,
       "INVALID_STORAGE_KEY",
-      "Storage key escapes the configured root."
+      "Storage key escapes the configured root.",
     );
   }
 
   return resolved;
 }
 
-export async function ensureWorkspaceStorage(workspaceId: string): Promise<void> {
+export async function ensureWorkspaceStorage(
+  workspaceId: string,
+): Promise<void> {
   const target = resolveStorageKey(`tenants/${workspaceId}`);
 
   await Promise.all([
@@ -49,13 +51,13 @@ export async function ensureWorkspaceStorage(workspaceId: string): Promise<void>
     mkdir(path.join(target, "variants"), { recursive: true }),
     mkdir(path.join(target, "thumbnails"), { recursive: true }),
     mkdir(path.join(target, "trash"), { recursive: true }),
-    mkdir(path.join(target, "temp"), { recursive: true })
+    mkdir(path.join(target, "temp"), { recursive: true }),
   ]);
 }
 
 export async function writeStorageFile(
   storageKey: string,
-  data: Buffer
+  data: Buffer,
 ): Promise<void> {
   const absolutePath = resolveStorageKey(storageKey);
   await mkdir(path.dirname(absolutePath), { recursive: true });
@@ -71,7 +73,7 @@ export async function writeStorageFile(
 
 export async function overwriteStorageFile(
   storageKey: string,
-  data: Buffer
+  data: Buffer,
 ): Promise<void> {
   const absolutePath = resolveStorageKey(storageKey);
   await mkdir(path.dirname(absolutePath), { recursive: true });
@@ -80,7 +82,7 @@ export async function overwriteStorageFile(
 
 export async function concatenateStorageFiles(
   sourceKeys: string[],
-  destinationKey: string
+  destinationKey: string,
 ): Promise<void> {
   const destinationPath = resolveStorageKey(destinationKey);
   await mkdir(path.dirname(destinationPath), { recursive: true });
@@ -99,7 +101,7 @@ export async function concatenateStorageFiles(
 
 export async function moveStorageFile(
   sourceKey: string,
-  destinationKey: string
+  destinationKey: string,
 ): Promise<void> {
   const sourcePath = resolveStorageKey(sourceKey);
   const destinationPath = resolveStorageKey(destinationKey);
@@ -134,7 +136,7 @@ export async function readStorageFile(storageKey: string): Promise<Buffer> {
 
 export async function readStoragePrefix(
   storageKey: string,
-  maxBytes = 4100
+  maxBytes = 4100,
 ): Promise<Buffer> {
   const fileHandle = await open(resolveStorageKey(storageKey), "r");
 
@@ -149,7 +151,7 @@ export async function readStoragePrefix(
 
 export function createStorageReadStream(
   storageKey: string,
-  options?: { start?: number; end?: number }
+  options?: { start?: number; end?: number },
 ) {
   return createReadStream(resolveStorageKey(storageKey), options);
 }
@@ -171,6 +173,6 @@ export async function storageHealth() {
     writable: true,
     totalBytes: totalBytes.toString(),
     freeBytes: freeBytes.toString(),
-    reservedBytes: String(env.MEDIA_STORAGE_RESERVED_BYTES)
+    reservedBytes: String(env.MEDIA_STORAGE_RESERVED_BYTES),
   };
 }

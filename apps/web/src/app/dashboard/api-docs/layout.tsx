@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 
-export default function DeveloperDocsLayout({ children }: { children: React.ReactNode }) {
+export default function DeveloperDocsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {

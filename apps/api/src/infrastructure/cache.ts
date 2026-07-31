@@ -16,14 +16,14 @@ const stats = {
   writes: 0,
   deletes: 0,
   errors: 0,
-  singleFlightJoins: 0
+  singleFlightJoins: 0,
 };
 
 function encode(value: unknown): string {
   return JSON.stringify(value, (_key, item) =>
     typeof item === "bigint"
       ? { __mediaPlatformBigInt: item.toString() }
-      : item
+      : item,
   );
 }
 
@@ -58,7 +58,7 @@ function setLocal(key: string, value: string, ttlSeconds: number): void {
   pruneLocalCache();
   localCache.set(key, {
     value,
-    expiresAt: Date.now() + ttlSeconds * 1000
+    expiresAt: Date.now() + ttlSeconds * 1000,
   });
 }
 
@@ -74,17 +74,20 @@ function getLocal(key: string): string | undefined {
   return entry.value;
 }
 
-export async function cacheGet<T>(namespace: string, id: string): Promise<T | undefined> {
+export async function cacheGet<T>(
+  namespace: string,
+  id: string,
+): Promise<T | undefined> {
   const key = redisKey("cache", namespace, id);
 
-  const redisValue = await withRedis(redis => redis.get(key));
+  const redisValue = await withRedis((redis) => redis.get(key));
   if (typeof redisValue === "string") {
     stats.redisHits += 1;
     try {
       return decode<T>(redisValue);
     } catch {
       stats.errors += 1;
-      await withRedis(redis => redis.del(key));
+      await withRedis((redis) => redis.del(key));
     }
   }
 
@@ -109,20 +112,20 @@ export async function cacheSet(
   namespace: string,
   id: string,
   value: unknown,
-  ttlSeconds: number
+  ttlSeconds: number,
 ): Promise<void> {
   const key = redisKey("cache", namespace, id);
   const encoded = encode(value);
   stats.writes += 1;
 
-  const redisResult = await withRedis(redis =>
-    redis.set(key, encoded, { EX: ttlSeconds })
+  const redisResult = await withRedis((redis) =>
+    redis.set(key, encoded, { EX: ttlSeconds }),
   );
 
   if (redisResult === undefined) {
     const fallbackTtl = Math.min(
       ttlSeconds,
-      env.REDIS_LOCAL_CACHE_FALLBACK_TTL_SECONDS
+      env.REDIS_LOCAL_CACHE_FALLBACK_TTL_SECONDS,
     );
     setLocal(key, encoded, fallbackTtl);
   } else {
@@ -136,18 +139,18 @@ export async function cacheDelete(
 ): Promise<void> {
   if (ids.length === 0) return;
 
-  const keys = ids.map(id => redisKey("cache", namespace, id));
+  const keys = ids.map((id) => redisKey("cache", namespace, id));
   stats.deletes += keys.length;
-  keys.forEach(key => localCache.delete(key));
+  keys.forEach((key) => localCache.delete(key));
 
-  await withRedis(redis => redis.del(keys));
+  await withRedis((redis) => redis.del(keys));
 }
 
 export async function cacheGetOrSet<T>(
   namespace: string,
   id: string,
   ttlSeconds: number,
-  loader: () => Promise<T>
+  loader: () => Promise<T>,
 ): Promise<T> {
   const cached = await cacheGet<T>(namespace, id);
   if (cached !== undefined) return cached;
@@ -160,7 +163,7 @@ export async function cacheGetOrSet<T>(
   }
 
   const promise = loader()
-    .then(async value => {
+    .then(async (value) => {
       await cacheSet(namespace, id, value, ttlSeconds);
       return value;
     })
@@ -175,11 +178,11 @@ export async function cacheGetOrSet<T>(
 export async function shouldRunThrottled(
   namespace: string,
   id: string,
-  ttlSeconds: number
+  ttlSeconds: number,
 ): Promise<boolean> {
   const key = redisKey("throttle", namespace, id);
-  const result = await withRedis(redis =>
-    redis.set(key, "1", { EX: ttlSeconds, NX: true })
+  const result = await withRedis((redis) =>
+    redis.set(key, "1", { EX: ttlSeconds, NX: true }),
   );
 
   if (result !== undefined) {
@@ -196,14 +199,14 @@ export function getCacheStats() {
   return {
     ...stats,
     localEntries: localCache.size,
-    inFlightLoads: inFlight.size
+    inFlightLoads: inFlight.size,
   };
 }
 
 export function resetCacheStatsForTests(): void {
   localCache.clear();
   inFlight.clear();
-  Object.keys(stats).forEach(key => {
+  Object.keys(stats).forEach((key) => {
     stats[key as keyof typeof stats] = 0;
   });
 }

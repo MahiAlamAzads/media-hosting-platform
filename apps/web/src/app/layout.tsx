@@ -7,13 +7,13 @@ import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
 export const metadata: Metadata = {
   title: {
     default: "Media Platform",
-    template: "%s · Media Platform"
+    template: "%s · Media Platform",
   },
-  description: "Secure media hosting, delivery and developer API management."
+  description: "Secure media hosting, delivery and developer API management.",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">

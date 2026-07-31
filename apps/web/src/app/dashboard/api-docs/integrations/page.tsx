@@ -4,13 +4,12 @@ import {
   apiKeyScopes,
   commonErrors,
   coreEndpoints,
-  integrationExamples
+  integrationExamples,
 } from "@/lib/integration-examples";
 import { API_URL } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 
-const CDN_URL =
-  process.env.NEXT_PUBLIC_CDN_URL ?? API_URL;
+const CDN_URL = process.env.NEXT_PUBLIC_CDN_URL ?? API_URL;
 
 const environmentCode = `MEDIA_PLATFORM_API_URL=${API_URL}
 MEDIA_PLATFORM_API_KEY=mh_live_your_key_id.your_secret`;
@@ -111,16 +110,10 @@ const methodClass: Record<string, string> = {
   POST: "text-bg-primary",
   PUT: "text-bg-warning",
   PATCH: "text-bg-info",
-  DELETE: "text-bg-danger"
+  DELETE: "text-bg-danger",
 };
 
-function CodeBlock({
-  title,
-  code
-}: {
-  title: string;
-  code: string;
-}) {
+function CodeBlock({ title, code }: { title: string; code: string }) {
   return (
     <div className="docs-code-shell">
       <div className="docs-code-toolbar">
@@ -141,7 +134,10 @@ export default function DashboardIntegrationDocsPage() {
         title="Developer integration guide"
         subtitle="Customer-safe API integration documentation for PUBLIC and PRIVATE media."
       >
-        <a className="btn btn-outline-primary" href="/dashboard/api-docs/ai-agent-skills">
+        <a
+          className="btn btn-outline-primary"
+          href="/dashboard/api-docs/ai-agent-skills"
+        >
           <i className="bi bi-stars me-1" />
           AI agent skills
         </a>
@@ -152,7 +148,9 @@ export default function DashboardIntegrationDocsPage() {
       </PageHeader>
 
       <div className="alert alert-info">
-        This page documents only customer integration endpoints. Internal platform and administrator APIs are available only inside the Admin Console.
+        This page documents only customer integration endpoints. Internal
+        platform and administrator APIs are available only inside the Admin
+        Console.
       </div>
       <div className="developer-guide">
         <div className="row g-4">
@@ -161,9 +159,7 @@ export default function DashboardIntegrationDocsPage() {
               className="card sticky-lg-top docs-sidebar"
               style={{ top: 88 }}
             >
-              <div className="card-header fw-semibold">
-                Start here
-              </div>
+              <div className="card-header fw-semibold">Start here</div>
               <div className="list-group list-group-flush">
                 <a
                   className="list-group-item list-group-item-action"
@@ -226,22 +222,15 @@ export default function DashboardIntegrationDocsPage() {
                 Upload an image and receive a ready URL
               </h1>
               <p className="lead text-secondary mb-4">
-                Choose PUBLIC for a permanent website CDN URL.
-                Choose PRIVATE for a protected file that requires
-                a temporary signed URL.
+                Choose PUBLIC for a permanent website CDN URL. Choose PRIVATE
+                for a protected file that requires a temporary signed URL.
               </p>
 
               <div className="d-flex flex-wrap gap-2">
-                <a
-                  className="btn btn-primary"
-                  href="#upload-flow"
-                >
+                <a className="btn btn-primary" href="#upload-flow">
                   Start uploading
                 </a>
-                <a
-                  className="btn btn-outline-secondary"
-                  href="#examples"
-                >
+                <a className="btn btn-outline-secondary" href="#examples">
                   View framework code
                 </a>
               </div>
@@ -249,12 +238,10 @@ export default function DashboardIntegrationDocsPage() {
 
             <section id="choose" className="mb-4">
               <div className="mb-3">
-                <h2 className="h4 mb-1">
-                  1. Choose public or private
-                </h2>
+                <h2 className="h4 mb-1">1. Choose public or private</h2>
                 <p className="text-secondary mb-0">
-                  This is the only visibility decision your
-                  application must make.
+                  This is the only visibility decision your application must
+                  make.
                 </p>
               </div>
 
@@ -273,8 +260,8 @@ export default function DashboardIntegrationDocsPage() {
                       </div>
 
                       <p className="text-secondary">
-                        Use for product photos, avatars, blog
-                        images, public documents and website media.
+                        Use for product photos, avatars, blog images, public
+                        documents and website media.
                       </p>
 
                       <code className="d-block mb-3">
@@ -303,8 +290,8 @@ export default function DashboardIntegrationDocsPage() {
                       </div>
 
                       <p className="text-secondary">
-                        Use for invoices, user documents, internal
-                        media and files requiring authorization.
+                        Use for invoices, user documents, internal media and
+                        files requiring authorization.
                       </p>
 
                       <code className="d-block mb-3">
@@ -312,8 +299,8 @@ export default function DashboardIntegrationDocsPage() {
                       </code>
 
                       <div className="alert alert-primary mb-0">
-                        Response has <code>imgUrl: null</code>.
-                        Create a temporary signed URL when needed.
+                        Response has <code>imgUrl: null</code>. Create a
+                        temporary signed URL when needed.
                       </div>
                     </div>
                   </div>
@@ -339,12 +326,10 @@ export default function DashboardIntegrationDocsPage() {
                   <li>
                     Add
                     <code className="mx-1">media:write</code>
-                    only when your application changes visibility,
-                    filename or folder later.
+                    only when your application changes visibility, filename or
+                    folder later.
                   </li>
-                  <li>
-                    Save the key in server environment variables.
-                  </li>
+                  <li>Save the key in server environment variables.</li>
                 </ol>
 
                 <div className="alert alert-warning">
@@ -354,18 +339,13 @@ export default function DashboardIntegrationDocsPage() {
                   variables, mobile bundles or public repositories.
                 </div>
 
-                <CodeBlock
-                  title=".env"
-                  code={environmentCode}
-                />
+                <CodeBlock title=".env" code={environmentCode} />
 
                 <div className="row g-3 mt-1">
                   {apiKeyScopes.map(([scope, description]) => (
                     <div className="col-md-6" key={scope}>
                       <div className="border rounded p-3 h-100">
-                        <code className="d-block mb-2">
-                          {scope}
-                        </code>
+                        <code className="d-block mb-2">{scope}</code>
                         <span className="text-secondary small">
                           {description}
                         </span>
@@ -377,14 +357,12 @@ export default function DashboardIntegrationDocsPage() {
             </section>
 
             <section id="upload-flow" className="card mb-4">
-              <div className="card-header fw-semibold">
-                3. Upload flow
-              </div>
+              <div className="card-header fw-semibold">3. Upload flow</div>
               <div className="card-body">
                 <div className="alert alert-info">
-                  Most developers should use one of the complete
-                  framework examples below. Build the raw flow only
-                  when creating your own SDK.
+                  Most developers should use one of the complete framework
+                  examples below. Build the raw flow only when creating your own
+                  SDK.
                 </div>
 
                 <div className="docs-flow mb-4">
@@ -409,38 +387,25 @@ export default function DashboardIntegrationDocsPage() {
                   </div>
                 </div>
 
-                <h3 className="h6">
-                  Step 1 — Start a public upload
-                </h3>
-                <CodeBlock
-                  title="HTTP request"
-                  code={publicInitCode}
-                />
+                <h3 className="h6">Step 1 — Start a public upload</h3>
+                <CodeBlock title="HTTP request" code={publicInitCode} />
 
                 <details className="docs-details my-3">
-                  <summary>
-                    Upload a private image instead
-                  </summary>
+                  <summary>Upload a private image instead</summary>
                   <div className="pt-3">
-                    <CodeBlock
-                      title="HTTP request"
-                      code={privateInitCode}
-                    />
+                    <CodeBlock title="HTTP request" code={privateInitCode} />
                   </div>
                 </details>
 
                 <h3 className="h6 mt-4">
                   Step 2 — Read the upload instructions
                 </h3>
-                <CodeBlock
-                  title="201 response"
-                  code={initResponseCode}
-                />
+                <CodeBlock title="201 response" code={initResponseCode} />
 
                 <p className="text-secondary mt-3">
                   Split the file using the returned
-                  <code className="mx-1">chunkSizeBytes</code>.
-                  Send each part in order:
+                  <code className="mx-1">chunkSizeBytes</code>. Send each part
+                  in order:
                 </p>
 
                 <pre className="docs-inline-request">
@@ -451,39 +416,30 @@ export default function DashboardIntegrationDocsPage() {
                   </code>
                 </pre>
 
-                <h3 className="h6 mt-4">
-                  Step 3 — Complete the upload
-                </h3>
+                <h3 className="h6 mt-4">Step 3 — Complete the upload</h3>
 
                 <pre className="docs-inline-request">
                   <code>
                     POST /api/v1/uploads/:uploadId/complete
                     {"\n"}Authorization: Bearer YOUR_API_KEY
                     {"\n"}Content-Type: application/json
-                    {"\n\n"}{"{}"}
+                    {"\n\n"}
+                    {"{}"}
                   </code>
                 </pre>
 
-                <h3 className="h6 mt-4">
-                  Step 4 — Save the response
-                </h3>
-                <CodeBlock
-                  title="200 response"
-                  code={completeResponseCode}
-                />
+                <h3 className="h6 mt-4">Step 4 — Save the response</h3>
+                <CodeBlock title="200 response" code={completeResponseCode} />
 
                 <div className="alert alert-success mt-3">
-                  Store <code>assetId</code> as the permanent
-                  identifier. Image optimization runs automatically after
-                  completion. Read the asset again to receive the optimized
+                  Store <code>assetId</code> as the permanent identifier. Image
+                  optimization runs automatically after completion. Read the
+                  asset again to receive the optimized
                   <code className="mx-1">imgUrl</code>, thumbnail and preview
                   URLs when processing finishes.
                 </div>
 
-                <CodeBlock
-                  title="HTML"
-                  code={htmlCode}
-                />
+                <CodeBlock title="HTML" code={htmlCode} />
               </div>
             </section>
 
@@ -494,35 +450,30 @@ export default function DashboardIntegrationDocsPage() {
               <div className="card-body">
                 <p>
                   Private uploads return
-                  <code className="mx-1">imgUrl: null</code>.
-                  Create a signed URL from your trusted server only
-                  when an authorized user requests the file.
+                  <code className="mx-1">imgUrl: null</code>. Create a signed
+                  URL from your trusted server only when an authorized user
+                  requests the file.
                 </p>
 
-                <CodeBlock
-                  title="Create signed URL"
-                  code={signedUrlCode}
-                />
+                <CodeBlock title="Create signed URL" code={signedUrlCode} />
 
                 <p className="text-secondary small mt-3">
                   The response contains
-                  <code className="mx-1">data.path</code>.
-                  Prefix it with your API URL. Signed URLs expire,
-                  so do not save them permanently in your database.
+                  <code className="mx-1">data.path</code>. Prefix it with your
+                  API URL. Signed URLs expire, so do not save them permanently
+                  in your database.
                 </p>
 
                 <hr />
 
-                <h3 className="h6">
-                  Change visibility later
-                </h3>
+                <h3 className="h6">Change visibility later</h3>
                 <CodeBlock
                   title="Make an asset public"
                   code={changeVisibilityCode}
                 />
                 <p className="text-secondary small mb-0 mt-3">
-                  Use <code>PRIVATE</code> in the same request to
-                  disable public delivery. Requires
+                  Use <code>PRIVATE</code> in the same request to disable public
+                  delivery. Requires
                   <code className="ms-1">media:write</code>.
                 </p>
               </div>
@@ -534,15 +485,12 @@ export default function DashboardIntegrationDocsPage() {
                   5. Copy a complete framework example
                 </h2>
                 <p className="text-secondary mb-0">
-                  Every example supports PUBLIC and PRIVATE uploads,
-                  uses the server-provided chunk size and aborts
-                  failed upload sessions.
+                  Every example supports PUBLIC and PRIVATE uploads, uses the
+                  server-provided chunk size and aborts failed upload sessions.
                 </p>
               </div>
 
-              <IntegrationExampleTabs
-                examples={integrationExamples}
-              />
+              <IntegrationExampleTabs examples={integrationExamples} />
 
               <div className="d-flex flex-wrap gap-2 mt-3">
                 <a
@@ -591,52 +539,56 @@ export default function DashboardIntegrationDocsPage() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td><code>assetId</code></td>
+                      <td>
+                        <code>assetId</code>
+                      </td>
                       <td>Permanent media identifier.</td>
                       <td>Yes</td>
                     </tr>
                     <tr>
-                      <td><code>visibility</code></td>
+                      <td>
+                        <code>visibility</code>
+                      </td>
                       <td>PUBLIC or PRIVATE.</td>
                       <td>Optional</td>
                     </tr>
                     <tr>
-                      <td><code>imgUrl</code></td>
                       <td>
-                        Permanent public image URL. It automatically
-                        switches to the optimized preview when ready. Null for
-                        private media and non-image files.
+                        <code>imgUrl</code>
+                      </td>
+                      <td>
+                        Permanent public image URL. It automatically switches to
+                        the optimized preview when ready. Null for private media
+                        and non-image files.
                       </td>
                       <td>Public images</td>
                     </tr>
                     <tr>
-                      <td><code>fileUrl</code></td>
                       <td>
-                        Permanent public URL for any public file.
+                        <code>fileUrl</code>
                       </td>
+                      <td>Permanent public URL for any public file.</td>
                       <td>Public files</td>
                     </tr>
                     <tr>
-                      <td><code>thumbnailUrl</code></td>
                       <td>
-                        Public thumbnail URL after the variant is
-                        ready.
+                        <code>thumbnailUrl</code>
                       </td>
+                      <td>Public thumbnail URL after the variant is ready.</td>
                       <td>Optional</td>
                     </tr>
                     <tr>
-                      <td><code>previewUrl</code></td>
                       <td>
-                        Public preview URL after the variant is
-                        ready.
+                        <code>previewUrl</code>
                       </td>
+                      <td>Public preview URL after the variant is ready.</td>
                       <td>Optional</td>
                     </tr>
                     <tr>
-                      <td><code>requestId</code></td>
                       <td>
-                        Support and audit correlation identifier.
+                        <code>requestId</code>
                       </td>
+                      <td>Support and audit correlation identifier.</td>
                       <td>Log it</td>
                     </tr>
                   </tbody>
@@ -645,9 +597,7 @@ export default function DashboardIntegrationDocsPage() {
             </section>
 
             <section className="card mb-4">
-              <div className="card-header fw-semibold">
-                7. Core endpoints
-              </div>
+              <div className="card-header fw-semibold">7. Core endpoints</div>
               <div className="table-responsive">
                 <table className="table table-hover mb-0">
                   <thead>
@@ -658,39 +608,32 @@ export default function DashboardIntegrationDocsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {coreEndpoints.map(
-                      ([method, endpoint, purpose]) => (
-                        <tr key={`${method}-${endpoint}`}>
-                          <td>
-                            <span
-                              className={`badge ${methodClass[method]}`}
-                            >
-                              {method}
-                            </span>
-                          </td>
-                          <td><code>{endpoint}</code></td>
-                          <td>{purpose}</td>
-                        </tr>
-                      )
-                    )}
+                    {coreEndpoints.map(([method, endpoint, purpose]) => (
+                      <tr key={`${method}-${endpoint}`}>
+                        <td>
+                          <span className={`badge ${methodClass[method]}`}>
+                            {method}
+                          </span>
+                        </td>
+                        <td>
+                          <code>{endpoint}</code>
+                        </td>
+                        <td>{purpose}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             </section>
 
             <section id="errors" className="card mb-4">
-              <div className="card-header fw-semibold">
-                8. Handle errors
-              </div>
+              <div className="card-header fw-semibold">8. Handle errors</div>
               <div className="card-body border-bottom">
                 <p className="mb-3">
-                  All errors use a predictable JSON envelope.
-                  Log the returned <code>requestId</code>.
+                  All errors use a predictable JSON envelope. Log the returned{" "}
+                  <code>requestId</code>.
                 </p>
-                <CodeBlock
-                  title="Error response"
-                  code={errorCode}
-                />
+                <CodeBlock title="Error response" code={errorCode} />
               </div>
 
               <div className="table-responsive">
@@ -703,15 +646,15 @@ export default function DashboardIntegrationDocsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {commonErrors.map(
-                      ([status, code, action]) => (
-                        <tr key={`${status}-${code}`}>
-                          <td>{status}</td>
-                          <td><code>{code}</code></td>
-                          <td>{action}</td>
-                        </tr>
-                      )
-                    )}
+                    {commonErrors.map(([status, code, action]) => (
+                      <tr key={`${status}-${code}`}>
+                        <td>{status}</td>
+                        <td>
+                          <code>{code}</code>
+                        </td>
+                        <td>{action}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -723,12 +666,10 @@ export default function DashboardIntegrationDocsPage() {
               </div>
               <div className="card-body">
                 <ul className="integration-checklist mb-0">
+                  <li>Keep every API key on a trusted server.</li>
                   <li>
-                    Keep every API key on a trusted server.
-                  </li>
-                  <li>
-                    Give each application a separate key with only
-                    the scopes it needs.
+                    Give each application a separate key with only the scopes it
+                    needs.
                   </li>
                   <li>
                     Explicitly send
@@ -737,12 +678,12 @@ export default function DashboardIntegrationDocsPage() {
                   </li>
                   <li>
                     Use the returned
-                    <code className="mx-1">chunkSizeBytes</code>.
-                    Do not hardcode an upload chunk size.
+                    <code className="mx-1">chunkSizeBytes</code>. Do not
+                    hardcode an upload chunk size.
                   </li>
                   <li>
-                    Abort failed uploads so storage reservations
-                    are released quickly.
+                    Abort failed uploads so storage reservations are released
+                    quickly.
                   </li>
                   <li>
                     Store <code>assetId</code>. Use
@@ -750,16 +691,15 @@ export default function DashboardIntegrationDocsPage() {
                     only for public images.
                   </li>
                   <li>
-                    Generate private signed URLs just before
-                    delivery and never store them permanently.
+                    Generate private signed URLs just before delivery and never
+                    store them permanently.
                   </li>
                   <li>
-                    Retry only safe operations with exponential
-                    backoff, especially after HTTP 429.
+                    Retry only safe operations with exponential backoff,
+                    especially after HTTP 429.
                   </li>
                   <li>
-                    Log <code>requestId</code> from success and
-                    error responses.
+                    Log <code>requestId</code> from success and error responses.
                   </li>
                 </ul>
               </div>

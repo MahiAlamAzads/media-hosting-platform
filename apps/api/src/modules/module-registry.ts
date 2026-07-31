@@ -1,4 +1,7 @@
-import type { ApiModuleDescriptor, RawBodyApiModuleDescriptor } from "../core/module/api-module.js";
+import type {
+  ApiModuleDescriptor,
+  RawBodyApiModuleDescriptor,
+} from "../core/module/api-module.js";
 import { accountModule } from "./account/account.module.js";
 import { accountPublicModule } from "./account/account-public.module.js";
 import { adminConsoleModule } from "./admin/admin-console.module.js";
@@ -18,10 +21,40 @@ import { paymentCallbackModule } from "./payments/payment-callback.module.js";
 import { paymentModule } from "./payments/payment.module.js";
 import { stripeCallbackModule } from "./payments/stripe-callback.module.js";
 import { pricingModule } from "./pricing/pricing.module.js";
-import { publicMediaCompatibilityModule, publicMediaModule } from "./public/public-media.module.js";
+import {
+  publicMediaCompatibilityModule,
+  publicMediaModule,
+} from "./public/public-media.module.js";
 import { securityModule } from "./security/security.module.js";
 import { uploadsModule } from "./uploads/uploads.module.js";
 import { usageModule } from "./usage/usage.module.js";
 import { variantsModule } from "./variants/variants.module.js";
-export const rawBodyApiModules: readonly RawBodyApiModuleDescriptor[]=[stripeCallbackModule];
-export const apiModules: readonly ApiModuleDescriptor[]=[docsModule,pricingModule,publicMediaModule,publicMediaCompatibilityModule,accountPublicModule,paymentCallbackModule,deliveryModule,uploadsModule,authModule,accountModule,securityModule,apiKeyModule,mediaModule,foldersModule,usageModule,auditModule,variantsModule,billingModule,paygModule,revenueModule,paymentModule,adminPlansModule,adminPaymentsModule,adminConsoleModule];
+export const rawBodyApiModules: readonly RawBodyApiModuleDescriptor[] = [
+  stripeCallbackModule,
+];
+export const apiModules: readonly ApiModuleDescriptor[] = [
+  docsModule,
+  pricingModule,
+  publicMediaModule,
+  publicMediaCompatibilityModule,
+  accountPublicModule,
+  paymentCallbackModule,
+  deliveryModule,
+  uploadsModule,
+  authModule,
+  accountModule,
+  securityModule,
+  apiKeyModule,
+  mediaModule,
+  foldersModule,
+  usageModule,
+  auditModule,
+  variantsModule,
+  billingModule,
+  paygModule,
+  revenueModule,
+  paymentModule,
+  adminPlansModule,
+  adminPaymentsModule,
+  adminConsoleModule,
+];

@@ -8,21 +8,23 @@ const workspaceRoot = path.resolve(packageDirectory, "../..");
 
 dotenv.config({
   path: path.join(workspaceRoot, ".env"),
-  override: false
+  override: false,
 });
 
 const migrationUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
 
 if (!migrationUrl) {
-  throw new Error(`DATABASE_URL or DIRECT_URL must be configured in ${path.join(workspaceRoot, ".env")}.`);
+  throw new Error(
+    `DATABASE_URL or DIRECT_URL must be configured in ${path.join(workspaceRoot, ".env")}.`,
+  );
 }
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
-    path: "prisma/migrations"
+    path: "prisma/migrations",
   },
   datasource: {
-    url: migrationUrl
-  }
+    url: migrationUrl,
+  },
 });

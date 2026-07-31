@@ -1,18 +1,17 @@
 import { prisma, Prisma } from "@media/database";
 import { sendSecurityEmail } from "../../infrastructure/mail.js";
 import { AppError } from "../../shared/http.js";
-import { getPeriodBounds, getSubscriptionCommitmentBounds } from "../billing/billing.utils.js";
+import {
+  getPeriodBounds,
+  getSubscriptionCommitmentBounds,
+} from "../billing/billing.utils.js";
 import { createInvoiceNumber } from "./payment.utils.js";
 
 export type PaymentTransaction = Prisma.TransactionClient;
 type BillingCurrency = "BDT" | "USD";
 type BillingInterval = "MONTHLY" | "YEARLY";
 type SubscriptionTerm =
-  | "FREE"
-  | "THREE_MONTHS"
-  | "SIX_MONTHS"
-  | "ONE_YEAR"
-  | "ENTERPRISE_CUSTOM";
+  "FREE" | "THREE_MONTHS" | "SIX_MONTHS" | "ONE_YEAR" | "ENTERPRISE_CUSTOM";
 
 function jsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -36,16 +35,13 @@ export async function createInvoiceForSubscriptionChange(
     planCode: string;
     planName: string;
     planVersion: number;
-  }
+  },
 ) {
   const now = new Date();
   const subscriptionTerm =
     input.subscriptionTerm ??
     (input.interval === "YEARLY" ? "ONE_YEAR" : "THREE_MONTHS");
-  const period = getSubscriptionCommitmentBounds(
-    now,
-    subscriptionTerm
-  );
+  const period = getSubscriptionCommitmentBounds(now, subscriptionTerm);
 
   return tx.billingInvoice.create({
     data: {
@@ -72,9 +68,9 @@ export async function createInvoiceForSubscriptionChange(
         interval: input.interval,
         revenueModel: "SUBSCRIPTION",
         subscriptionTerm,
-        amountMinor: input.amountMinor.toString()
-      })
-    }
+        amountMinor: input.amountMinor.toString(),
+      }),
+    },
   });
 }
 
@@ -96,7 +92,7 @@ export async function createRenewalInvoice(
     periodStart: Date;
     periodEnd: Date;
     dueAt: Date;
-  }
+  },
 ) {
   const subscriptionTerm =
     input.subscriptionTerm ??
@@ -130,15 +126,15 @@ export async function createRenewalInvoice(
         subscriptionTerm,
         amountMinor: input.amountMinor.toString(),
         periodStart: input.periodStart.toISOString(),
-        periodEnd: input.periodEnd.toISOString()
-      })
-    }
+        periodEnd: input.periodEnd.toISOString(),
+      }),
+    },
   });
 }
 
 export async function getInvoiceForWorkspace(
   invoiceId: string,
-  workspaceId: string
+  workspaceId: string,
 ) {
   const invoice = await prisma.billingInvoice.findFirst({
     where: { id: invoiceId, workspaceId },
@@ -147,10 +143,10 @@ export async function getInvoiceForWorkspace(
       payments: {
         orderBy: { createdAt: "desc" },
         include: {
-          manualSubmission: { include: { account: true } }
-        }
-      }
-    }
+          manualSubmission: { include: { account: true } },
+        },
+      },
+    },
   });
 
   if (!invoice) {
@@ -162,7 +158,7 @@ export async function getInvoiceForWorkspace(
 
 export async function assertInvoicePayable(
   invoiceId: string,
-  workspaceId: string
+  workspaceId: string,
 ) {
   const invoice = await getInvoiceForWorkspace(invoiceId, workspaceId);
 
@@ -170,7 +166,7 @@ export async function assertInvoicePayable(
     throw new AppError(
       409,
       "INVOICE_NOT_PAYABLE",
-      "This invoice is no longer open for payment."
+      "This invoice is no longer open for payment.",
     );
   }
 
@@ -180,19 +176,19 @@ export async function assertInvoicePayable(
     await prisma.$transaction([
       prisma.billingInvoice.update({
         where: { id: invoice.id },
-        data: { status: "EXPIRED" }
+        data: { status: "EXPIRED" },
       }),
       prisma.subscriptionChange.updateMany({
         where: {
           id: invoice.subscriptionChangeId ?? "",
-          status: "PAYMENT_PENDING"
+          status: "PAYMENT_PENDING",
         },
         data: {
           status: "CANCELLED",
           reviewedAt: new Date(),
-          note: "Invoice expired before payment."
-        }
-      })
+          note: "Invoice expired before payment.",
+        },
+      }),
     ]);
 
     throw new AppError(
@@ -200,7 +196,7 @@ export async function assertInvoicePayable(
       "INVOICE_EXPIRED",
       invoice.kind === "WALLET_TOPUP"
         ? "This top-up invoice expired. Create a new top-up."
-        : "This invoice expired. Request the plan again."
+        : "This invoice expired. Request the plan again.",
     );
   }
 
@@ -213,10 +209,10 @@ export async function applyPaidPayment(input: {
   ipAddress?: string | null;
   note: string;
 }) {
-  const result = await prisma.$transaction(async tx => {
+  const result = await prisma.$transaction(async (tx) => {
     const initial = await tx.paymentAttempt.findUnique({
       where: { id: input.paymentAttemptId },
-      select: { invoiceId: true }
+      select: { invoiceId: true },
     });
 
     if (!initial) {
@@ -241,16 +237,16 @@ export async function applyPaidPayment(input: {
                 plan: true,
                 entitlements: {
                   where: { metric: "STORAGE_BYTES" },
-                  take: 1
-                }
-              }
+                  take: 1,
+                },
+              },
             },
             requestedBy: {
-              select: { email: true, name: true }
-            }
-          }
-        }
-      }
+              select: { email: true, name: true },
+            },
+          },
+        },
+      },
     });
 
     if (!attempt) {
@@ -263,7 +259,7 @@ export async function applyPaidPayment(input: {
         alreadyApplied: true,
         subscriptionActivated: false,
         email: attempt.invoice.requestedBy.email,
-        planName: attempt.invoice.planVersion.plan.name
+        planName: attempt.invoice.planVersion.plan.name,
       };
     }
 
@@ -271,7 +267,7 @@ export async function applyPaidPayment(input: {
       throw new AppError(
         409,
         "PAYMENT_NOT_APPROVABLE",
-        "Payment is not ready for approval."
+        "Payment is not ready for approval.",
       );
     }
 
@@ -286,7 +282,7 @@ export async function applyPaidPayment(input: {
       throw new AppError(
         409,
         "PAYMENT_INVOICE_MISMATCH",
-        "Payment amount or currency does not match the invoice."
+        "Payment amount or currency does not match the invoice.",
       );
     }
 
@@ -308,7 +304,7 @@ export async function applyPaidPayment(input: {
       `;
 
       let wallet = await tx.prepaidWallet.findUnique({
-        where: { workspaceId: attempt.invoice.workspaceId }
+        where: { workspaceId: attempt.invoice.workspaceId },
       });
 
       if (!wallet) {
@@ -317,8 +313,8 @@ export async function applyPaidPayment(input: {
             workspaceId: attempt.invoice.workspaceId,
             currency: attempt.invoice.currency,
             lowBalanceThresholdMinor:
-              attempt.invoice.currency === "BDT" ? 10000n : 100n
-          }
+              attempt.invoice.currency === "BDT" ? 10000n : 100n,
+          },
         });
       }
 
@@ -329,24 +325,22 @@ export async function applyPaidPayment(input: {
         throw new AppError(
           409,
           "WALLET_NOT_CREDITABLE",
-          "The prepaid wallet cannot accept this payment."
+          "The prepaid wallet cannot accept this payment.",
         );
       }
 
-      const existingCredit =
-        await tx.walletTransaction.findUnique({
-          where: {
-            idempotencyKey: `wallet-topup:${attempt.invoice.id}`
-          }
-        });
+      const existingCredit = await tx.walletTransaction.findUnique({
+        where: {
+          idempotencyKey: `wallet-topup:${attempt.invoice.id}`,
+        },
+      });
 
-      const nextBalance =
-        wallet.balanceMinor + attempt.invoice.amountMinor;
+      const nextBalance = wallet.balanceMinor + attempt.invoice.amountMinor;
 
       if (!existingCredit) {
         await tx.prepaidWallet.update({
           where: { id: wallet.id },
-          data: { balanceMinor: nextBalance }
+          data: { balanceMinor: nextBalance },
         });
 
         await tx.walletTransaction.create({
@@ -357,32 +351,32 @@ export async function applyPaidPayment(input: {
             amountMinor: attempt.invoice.amountMinor,
             balanceAfterMinor: nextBalance,
             currency: attempt.invoice.currency,
-            idempotencyKey:
-              `wallet-topup:${attempt.invoice.id}`,
+            idempotencyKey: `wallet-topup:${attempt.invoice.id}`,
             invoiceId: attempt.invoice.id,
-            reference: attempt.providerTransactionId ??
+            reference:
+              attempt.providerTransactionId ??
               attempt.bankTransactionId ??
               attempt.id,
             createdById: input.actorId ?? null,
             metadata: {
               paymentAttemptId: attempt.id,
-              paymentMethod: attempt.method
-            }
-          }
+              paymentMethod: attempt.method,
+            },
+          },
         });
       }
 
       await tx.paymentAttempt.update({
         where: { id: attempt.id },
-        data: { status: "PAID", completedAt: now }
+        data: { status: "PAID", completedAt: now },
       });
 
       await tx.billingInvoice.update({
         where: { id: attempt.invoice.id },
         data: {
           status: "PAID",
-          paidAt: now
-        }
+          paidAt: now,
+        },
       });
 
       await tx.auditLog.create({
@@ -397,26 +391,25 @@ export async function applyPaidPayment(input: {
             amountMinor: attempt.invoice.amountMinor.toString(),
             currency: attempt.invoice.currency,
             balanceAfterMinor: (
-              existingCredit?.balanceAfterMinor ??
-              nextBalance
+              existingCredit?.balanceAfterMinor ?? nextBalance
             ).toString(),
-            method: attempt.method
+            method: attempt.method,
           },
-          ipAddress: input.ipAddress ?? null
-        }
+          ipAddress: input.ipAddress ?? null,
+        },
       });
 
       return {
         invoice: {
           ...attempt.invoice,
           status: "PAID" as const,
-          paidAt: now
+          paidAt: now,
         },
         alreadyApplied: false,
         subscriptionActivated: false,
         walletCredited: true,
         email: attempt.invoice.requestedBy.email,
-        planName: "Prepaid wallet"
+        planName: "Prepaid wallet",
       };
     }
 
@@ -425,46 +418,41 @@ export async function applyPaidPayment(input: {
       throw new AppError(
         503,
         "ENTITLEMENT_NOT_CONFIGURED",
-        "Storage entitlement is missing from the selected plan."
+        "Storage entitlement is missing from the selected plan.",
       );
     }
 
     const currentSubscription = await tx.workspaceSubscription.findUnique({
-      where: { workspaceId: attempt.invoice.workspaceId }
+      where: { workspaceId: attempt.invoice.workspaceId },
     });
 
     if (!currentSubscription) {
       throw new AppError(
         404,
         "SUBSCRIPTION_NOT_FOUND",
-        "Workspace subscription was not found."
+        "Workspace subscription was not found.",
       );
     }
 
     const now = new Date();
     const renewalIsDue =
       attempt.invoice.kind === "RENEWAL" &&
-      (
-        currentSubscription.commitmentEndsAt ??
-        currentSubscription.periodEnd
-      ) <= now;
+      (currentSubscription.commitmentEndsAt ?? currentSubscription.periodEnd) <=
+        now;
     const subscriptionActivated =
       attempt.invoice.kind === "PLAN_CHANGE" || renewalIsDue;
 
     let subscription = currentSubscription;
     let effectivePeriod = {
       start: attempt.invoice.periodStart,
-      end: attempt.invoice.periodEnd
+      end: attempt.invoice.periodEnd,
     };
     const commitment =
       attempt.invoice.kind === "PLAN_CHANGE"
-        ? getSubscriptionCommitmentBounds(
-            now,
-            attempt.invoice.subscriptionTerm
-          )
+        ? getSubscriptionCommitmentBounds(now, attempt.invoice.subscriptionTerm)
         : {
             start: attempt.invoice.periodStart,
-            end: attempt.invoice.periodEnd
+            end: attempt.invoice.periodEnd,
           };
 
     if (attempt.invoice.kind === "PLAN_CHANGE") {
@@ -481,16 +469,14 @@ export async function applyPaidPayment(input: {
           currency: attempt.invoice.currency,
           interval: attempt.invoice.interval,
           revenueModel: "SUBSCRIPTION",
-          subscriptionTerm:
-            attempt.invoice.subscriptionTerm,
-          commitmentEndsAt:
-            commitment.end,
+          subscriptionTerm: attempt.invoice.subscriptionTerm,
+          commitmentEndsAt: commitment.end,
           status: "ACTIVE",
           periodStart: effectivePeriod.start,
           periodEnd: effectivePeriod.end,
           cancelAtPeriodEnd: false,
-          graceEndsAt: null
-        }
+          graceEndsAt: null,
+        },
       });
 
       await tx.$executeRaw`
@@ -507,8 +493,8 @@ export async function applyPaidPayment(input: {
         data: {
           status: "DISABLED",
           pausedAt: null,
-          pauseReason: null
-        }
+          pauseReason: null,
+        },
       });
 
       await tx.billingPreference.upsert({
@@ -518,30 +504,28 @@ export async function applyPaidPayment(input: {
           preferredCurrency: attempt.invoice.currency,
           preferredInterval: attempt.invoice.interval,
           revenueModel: "SUBSCRIPTION",
-          subscriptionTerm:
-            attempt.invoice.subscriptionTerm
+          subscriptionTerm: attempt.invoice.subscriptionTerm,
         },
         update: {
           preferredCurrency: attempt.invoice.currency,
           preferredInterval: attempt.invoice.interval,
           revenueModel: "SUBSCRIPTION",
-          subscriptionTerm:
-            attempt.invoice.subscriptionTerm
-        }
+          subscriptionTerm: attempt.invoice.subscriptionTerm,
+        },
       });
     }
 
     await tx.paymentAttempt.update({
       where: { id: attempt.id },
-      data: { status: "PAID", completedAt: now }
+      data: { status: "PAID", completedAt: now },
     });
 
     await tx.billingInvoice.update({
       where: { id: attempt.invoice.id },
       data: {
         status: "PAID",
-        paidAt: now
-      }
+        paidAt: now,
+      },
     });
 
     if (attempt.invoice.subscriptionChangeId && subscriptionActivated) {
@@ -552,8 +536,8 @@ export async function applyPaidPayment(input: {
           effectiveAt: effectivePeriod.start,
           reviewedById: input.actorId ?? null,
           reviewedAt: now,
-          note: input.note
-        }
+          note: input.note,
+        },
       });
     }
 
@@ -562,32 +546,32 @@ export async function applyPaidPayment(input: {
         where: {
           workspaceId: attempt.invoice.workspaceId,
           id: { not: attempt.invoice.subscriptionChangeId ?? "" },
-          status: { in: ["PAYMENT_PENDING", "PENDING", "APPROVED"] }
+          status: { in: ["PAYMENT_PENDING", "PENDING", "APPROVED"] },
         },
-        select: { id: true }
+        select: { id: true },
       });
-      const changeIds = otherChanges.map(item => item.id);
+      const changeIds = otherChanges.map((item) => item.id);
       const otherInvoices = await tx.billingInvoice.findMany({
         where: {
           workspaceId: attempt.invoice.workspaceId,
           id: { not: attempt.invoice.id },
-          status: "OPEN"
+          status: "OPEN",
         },
-        select: { id: true }
+        select: { id: true },
       });
-      const invoiceIds = otherInvoices.map(item => item.id);
+      const invoiceIds = otherInvoices.map((item) => item.id);
 
       if (invoiceIds.length > 0) {
         await tx.paymentAttempt.updateMany({
           where: {
             invoiceId: { in: invoiceIds },
-            status: { in: ["PENDING", "PROCESSING", "UNDER_REVIEW"] }
+            status: { in: ["PENDING", "PROCESSING", "UNDER_REVIEW"] },
           },
           data: {
             status: "CANCELLED",
             completedAt: now,
-            failureReason: "Superseded by a paid subscription change."
-          }
+            failureReason: "Superseded by a paid subscription change.",
+          },
         });
       }
 
@@ -598,15 +582,15 @@ export async function applyPaidPayment(input: {
             status: "CANCELLED",
             reviewedById: input.actorId ?? null,
             reviewedAt: now,
-            note: "Superseded by a paid subscription change."
-          }
+            note: "Superseded by a paid subscription change.",
+          },
         });
       }
 
       if (invoiceIds.length > 0) {
         await tx.billingInvoice.updateMany({
           where: { id: { in: invoiceIds } },
-          data: { status: "VOID", voidedAt: now }
+          data: { status: "VOID", voidedAt: now },
         });
       }
     }
@@ -629,10 +613,10 @@ export async function applyPaidPayment(input: {
           currency: attempt.currency,
           planCode: attempt.invoice.planVersion.plan.code,
           periodStart: effectivePeriod.start.toISOString(),
-          periodEnd: effectivePeriod.end.toISOString()
+          periodEnd: effectivePeriod.end.toISOString(),
         },
-        ipAddress: input.ipAddress ?? null
-      }
+        ipAddress: input.ipAddress ?? null,
+      },
     });
 
     return {
@@ -641,13 +625,13 @@ export async function applyPaidPayment(input: {
         status: "PAID" as const,
         paidAt: now,
         periodStart: effectivePeriod.start,
-        periodEnd: effectivePeriod.end
+        periodEnd: effectivePeriod.end,
       },
       subscription,
       alreadyApplied: false,
       subscriptionActivated,
       email: attempt.invoice.requestedBy.email,
-      planName: attempt.invoice.planVersion.plan.name
+      planName: attempt.invoice.planVersion.plan.name,
     };
   });
 
@@ -655,11 +639,12 @@ export async function applyPaidPayment(input: {
     void sendSecurityEmail({
       to: result.email,
       subject: "Payment confirmed",
-      text: "walletCredited" in result && result.walletCredited
-        ? "Your payment was confirmed and your prepaid wallet balance has been credited."
-        : result.subscriptionActivated
-          ? `Your payment was confirmed and the ${result.planName} plan is now active.`
-          : `Your payment was confirmed. The ${result.planName} plan will renew at the end of the current commitment.`
+      text:
+        "walletCredited" in result && result.walletCredited
+          ? "Your payment was confirmed and your prepaid wallet balance has been credited."
+          : result.subscriptionActivated
+            ? `Your payment was confirmed and the ${result.planName} plan is now active.`
+            : `Your payment was confirmed. The ${result.planName} plan will renew at the end of the current commitment.`,
     }).catch(() => undefined);
   }
 

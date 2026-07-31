@@ -24,9 +24,7 @@ function createWhatsAppUrl(
   message: string,
   currentUrl?: string,
 ): string {
-  const pageContext = currentUrl
-    ? `\n\nPage: ${currentUrl}`
-    : "";
+  const pageContext = currentUrl ? `\n\nPage: ${currentUrl}` : "";
 
   return `https://wa.me/${number}?text=${encodeURIComponent(`${message}${pageContext}`)}`;
 }
@@ -38,16 +36,12 @@ function getSafeCurrentPageUrl(): string {
 export function WhatsAppFloatingButton() {
   const configuredNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim();
   const number = useMemo(
-    () => normalizeWhatsAppNumber(
-      configuredNumber || DEFAULT_WHATSAPP_NUMBER,
-    ),
+    () => normalizeWhatsAppNumber(configuredNumber || DEFAULT_WHATSAPP_NUMBER),
     [configuredNumber],
   );
   const configuredMessage = process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE?.trim();
   const message = configuredMessage || DEFAULT_WHATSAPP_MESSAGE;
-  const [href, setHref] = useState(
-    createWhatsAppUrl(number, message),
-  );
+  const [href, setHref] = useState(createWhatsAppUrl(number, message));
 
   useEffect(() => {
     setHref(createWhatsAppUrl(number, message, getSafeCurrentPageUrl()));

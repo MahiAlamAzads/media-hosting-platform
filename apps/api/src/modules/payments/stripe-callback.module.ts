@@ -4,9 +4,14 @@ import { StripeCallbackHttpRepository } from "./stripe-callback.facade.repositor
 import { StripeCallbackHttpRoute } from "./stripe-callback.facade.route.js";
 import { StripeCallbackHttpService } from "./stripe-callback.facade.service.js";
 import { StripeCallbackHttpValidation } from "./stripe-callback.facade.validation.js";
-const repository=new StripeCallbackHttpRepository();
-const validation=new StripeCallbackHttpValidation();
-const service=new StripeCallbackHttpService(repository,validation);
-const controller=new StripeCallbackHttpController(service);
-const route=new StripeCallbackHttpRoute(controller);
-export const stripeCallbackModule: RawBodyApiModuleDescriptor={name:"stripe-callback",mountPath:"/api/v1/payment-callbacks/stripe",router:route.router,rawBody:{type:"application/json",limit:"512kb"}};
+const repository = new StripeCallbackHttpRepository();
+const validation = new StripeCallbackHttpValidation();
+const service = new StripeCallbackHttpService(repository, validation);
+const controller = new StripeCallbackHttpController(service);
+const route = new StripeCallbackHttpRoute(controller);
+export const stripeCallbackModule: RawBodyApiModuleDescriptor = {
+  name: "stripe-callback",
+  mountPath: "/api/v1/payment-callbacks/stripe",
+  router: route.router,
+  rawBody: { type: "application/json", limit: "512kb" },
+};

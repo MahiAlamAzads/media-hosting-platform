@@ -8,7 +8,7 @@ import {
   formatMetricValue,
   formatMoneyMinor,
   metricLabels,
-  type UsageMetricName
+  type UsageMetricName,
 } from "@/lib/billing-format";
 
 type Currency = "BDT" | "USD";
@@ -78,25 +78,26 @@ export default function PrepaidPaygPage() {
   const [caps, setCaps] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [variant, setVariant] =
-    useState<"success" | "danger" | "warning">("success");
+  const [variant, setVariant] = useState<"success" | "danger" | "warning">(
+    "success",
+  );
 
   async function load(): Promise<void> {
     const [optionResponse, walletResponse] = await Promise.all([
       apiRequest<{ data: RevenueOptions }>("/api/v1/billing/revenue-options"),
-      apiRequest<{ data: Wallet | null }>("/api/v1/billing/wallet")
+      apiRequest<{ data: Wallet | null }>("/api/v1/billing/wallet"),
     ]);
     setOptions(optionResponse.data);
     setWallet(walletResponse.data);
     const state: Record<string, boolean> = {};
     const saved = new Map(
-      (optionResponse.data.paygPolicy?.metrics ?? []).map(item => [
+      (optionResponse.data.paygPolicy?.metrics ?? []).map((item) => [
         item.metric,
-        item
-      ])
+        item,
+      ]),
     );
     const savedCaps: Record<string, string> = {};
-    optionResponse.data.paygMetrics.forEach(item => {
+    optionResponse.data.paygMetrics.forEach((item) => {
       if (!item.selectable) return;
       const setting = saved.get(item.metric);
       state[item.metric] = setting
@@ -110,29 +111,23 @@ export default function PrepaidPaygPage() {
     });
     setSelected(state);
     setCaps(savedCaps);
-    setTopup(
-      (Number(optionResponse.data.minimumTopupMinor) / 100).toFixed(2)
-    );
+    setTopup((Number(optionResponse.data.minimumTopupMinor) / 100).toFixed(2));
   }
 
   useEffect(() => {
-    void load().catch(error => {
+    void load().catch((error) => {
       setVariant("danger");
       setMessage((error as Error).message);
     });
   }, []);
 
   const selectableMetrics = useMemo(
-    () => options?.paygMetrics.filter(item => item.selectable) ?? [],
-    [options]
+    () => options?.paygMetrics.filter((item) => item.selectable) ?? [],
+    [options],
   );
 
-  const available = wallet
-    ? BigInt(wallet.availableMinor)
-    : BigInt(0);
-  const minimum = options
-    ? BigInt(options.minimumTopupMinor)
-    : BigInt(0);
+  const available = wallet ? BigInt(wallet.availableMinor) : BigInt(0);
+  const minimum = options ? BigInt(options.minimumTopupMinor) : BigInt(0);
   const canActivate =
     Boolean(wallet) &&
     wallet?.status === "ACTIVE" &&
@@ -150,11 +145,11 @@ export default function PrepaidPaygPage() {
         method: "POST",
         body: JSON.stringify({
           currency: options.current.currency,
-          amountMinor: majorToMinor(topup)
-        })
+          amountMinor: majorToMinor(topup),
+        }),
       });
       window.location.assign(
-        `/dashboard/billing/payments/${response.data.invoiceId}`
+        `/dashboard/billing/payments/${response.data.invoiceId}`,
       );
     } catch (error) {
       setVariant("danger");
@@ -166,12 +161,12 @@ export default function PrepaidPaygPage() {
   async function activate(): Promise<void> {
     if (!options) return;
     const metrics = selectableMetrics
-      .filter(item => selected[item.metric])
-      .map(item => ({
+      .filter((item) => selected[item.metric])
+      .map((item) => ({
         metric: item.metric,
         metricSpendCapMinor: caps[item.metric]
           ? majorToMinor(caps[item.metric])
-          : null
+          : null,
       }));
 
     if (metrics.length === 0) {
@@ -188,13 +183,13 @@ export default function PrepaidPaygPage() {
         body: JSON.stringify({
           revenueModel: "PREPAID_PAYG",
           currency: options.current.currency,
-          metrics
-        })
+          metrics,
+        }),
       });
       await load();
       setVariant("success");
       setMessage(
-        "Prepaid Pay As You Go is active. Usage will now debit the wallet."
+        "Prepaid Pay As You Go is active. Usage will now debit the wallet.",
       );
     } catch (error) {
       setVariant("danger");
@@ -209,7 +204,7 @@ export default function PrepaidPaygPage() {
     try {
       await apiRequest("/api/v1/billing/revenue-model", {
         method: "PATCH",
-        body: JSON.stringify({ revenueModel: "SUBSCRIPTION" })
+        body: JSON.stringify({ revenueModel: "SUBSCRIPTION" }),
       });
       window.location.assign("/dashboard/billing/plans");
     } catch (error) {
@@ -241,34 +236,51 @@ export default function PrepaidPaygPage() {
 
       <div className="alert alert-info">
         <strong>No credit, no PAYG service.</strong> Your wallet must contain at
-        least {formatMoneyMinor(options.minimumTopupMinor, options.current.currency)}
-        before activation. Card numbers and CVV are never stored by this platform.
+        least{" "}
+        {formatMoneyMinor(options.minimumTopupMinor, options.current.currency)}
+        before activation. Card numbers and CVV are never stored by this
+        platform.
       </div>
 
       <div className="row g-4">
         <div className="col-xl-4">
           <div className="card h-100">
-            <div className="card-header"><strong>Wallet</strong></div>
+            <div className="card-header">
+              <strong>Wallet</strong>
+            </div>
             <div className="card-body">
               <div className="display-6 fw-semibold mb-1">
-                {formatMoneyMinor(wallet?.availableMinor ?? "0", options.current.currency)}
+                {formatMoneyMinor(
+                  wallet?.availableMinor ?? "0",
+                  options.current.currency,
+                )}
               </div>
               <div className="text-secondary small mb-4">Available balance</div>
 
               <dl className="row small mb-4">
                 <dt className="col-6">Status</dt>
-                <dd className="col-6 text-end">{wallet?.status ?? "Not funded"}</dd>
+                <dd className="col-6 text-end">
+                  {wallet?.status ?? "Not funded"}
+                </dd>
                 <dt className="col-6">Total balance</dt>
                 <dd className="col-6 text-end">
-                  {formatMoneyMinor(wallet?.balanceMinor ?? "0", options.current.currency)}
+                  {formatMoneyMinor(
+                    wallet?.balanceMinor ?? "0",
+                    options.current.currency,
+                  )}
                 </dd>
                 <dt className="col-6">Reserved</dt>
                 <dd className="col-6 text-end">
-                  {formatMoneyMinor(wallet?.reservedMinor ?? "0", options.current.currency)}
+                  {formatMoneyMinor(
+                    wallet?.reservedMinor ?? "0",
+                    options.current.currency,
+                  )}
                 </dd>
               </dl>
 
-              <label className="form-label">Top-up amount ({options.current.currency})</label>
+              <label className="form-label">
+                Top-up amount ({options.current.currency})
+              </label>
               <div className="input-group">
                 <span className="input-group-text">
                   {options.current.currency === "BDT" ? "৳" : "$"}
@@ -277,7 +289,7 @@ export default function PrepaidPaygPage() {
                   className="form-control"
                   inputMode="decimal"
                   value={topup}
-                  onChange={event => setTopup(event.target.value)}
+                  onChange={(event) => setTopup(event.target.value)}
                 />
                 <button
                   className="btn btn-primary"
@@ -299,11 +311,13 @@ export default function PrepaidPaygPage() {
           <div className="card">
             <div className="card-header d-flex justify-content-between align-items-center">
               <strong>Selected PAYG services</strong>
-              <span className={`badge ${
-                options.current.revenueModel === "PREPAID_PAYG"
-                  ? "text-bg-success"
-                  : "text-bg-secondary"
-              }`}>
+              <span
+                className={`badge ${
+                  options.current.revenueModel === "PREPAID_PAYG"
+                    ? "text-bg-success"
+                    : "text-bg-secondary"
+                }`}
+              >
                 {options.current.revenueModel === "PREPAID_PAYG"
                   ? "Active"
                   : "Not active"}
@@ -312,21 +326,22 @@ export default function PrepaidPaygPage() {
             <div className="card-body">
               <p className="text-secondary">
                 PAYG starts charging from the first billable unit. Only selected
-                metered services are enabled; unselected PAYG services remain stopped.
+                metered services are enabled; unselected PAYG services remain
+                stopped.
               </p>
 
               <div className="vstack gap-3">
-                {selectableMetrics.map(item => (
+                {selectableMetrics.map((item) => (
                   <div className="border rounded p-3" key={item.metric}>
                     <div className="form-check form-switch">
                       <input
                         className="form-check-input"
                         type="checkbox"
                         checked={Boolean(selected[item.metric])}
-                        onChange={event =>
-                          setSelected(current => ({
+                        onChange={(event) =>
+                          setSelected((current) => ({
                             ...current,
-                            [item.metric]: event.target.checked
+                            [item.metric]: event.target.checked,
                           }))
                         }
                         id={`metric-${item.metric}`}
@@ -341,8 +356,9 @@ export default function PrepaidPaygPage() {
                     <div className="small text-secondary mt-2">
                       {formatMoneyMinor(
                         item.overagePriceMinor ?? "0",
-                        options.current.currency
-                      )} per {unitLabel(item.metric, item.overageUnit)}
+                        options.current.currency,
+                      )}{" "}
+                      per {unitLabel(item.metric, item.overageUnit)}
                     </div>
                     {selected[item.metric] && (
                       <div className="mt-3">
@@ -354,10 +370,10 @@ export default function PrepaidPaygPage() {
                           inputMode="decimal"
                           placeholder="No separate cap"
                           value={caps[item.metric] ?? ""}
-                          onChange={event =>
-                            setCaps(current => ({
+                          onChange={(event) =>
+                            setCaps((current) => ({
                               ...current,
-                              [item.metric]: event.target.value
+                              [item.metric]: event.target.value,
                             }))
                           }
                         />
@@ -369,8 +385,8 @@ export default function PrepaidPaygPage() {
 
               {selectableMetrics.length === 0 && (
                 <div className="alert alert-warning mb-0">
-                  The current plan does not have PAYG unit prices. An administrator
-                  must configure overage prices first.
+                  The current plan does not have PAYG unit prices. An
+                  administrator must configure overage prices first.
                 </div>
               )}
             </div>
@@ -395,7 +411,9 @@ export default function PrepaidPaygPage() {
       </div>
 
       <div className="card mt-4">
-        <div className="card-header"><strong>Recent wallet activity</strong></div>
+        <div className="card-header">
+          <strong>Recent wallet activity</strong>
+        </div>
         <div className="table-responsive">
           <table className="table table-hover align-middle mb-0">
             <thead>
@@ -408,14 +426,20 @@ export default function PrepaidPaygPage() {
               </tr>
             </thead>
             <tbody>
-              {(wallet?.transactions ?? []).map(item => (
+              {(wallet?.transactions ?? []).map((item) => (
                 <tr key={item.id}>
                   <td>{new Date(item.createdAt).toLocaleString()}</td>
-                  <td><span className="badge text-bg-light">{item.kind}</span></td>
+                  <td>
+                    <span className="badge text-bg-light">{item.kind}</span>
+                  </td>
                   <td>{item.invoice?.number ?? item.reference ?? "—"}</td>
-                  <td className={`text-end ${
-                    BigInt(item.amountMinor) >= BigInt(0) ? "text-success" : "text-danger"
-                  }`}>
+                  <td
+                    className={`text-end ${
+                      BigInt(item.amountMinor) >= BigInt(0)
+                        ? "text-success"
+                        : "text-danger"
+                    }`}
+                  >
                     {formatMoneyMinor(item.amountMinor, wallet!.currency)}
                   </td>
                   <td className="text-end">
@@ -424,9 +448,11 @@ export default function PrepaidPaygPage() {
                 </tr>
               ))}
               {!wallet?.transactions?.length && (
-                <tr><td colSpan={5} className="text-center text-secondary py-4">
-                  No wallet transactions yet.
-                </td></tr>
+                <tr>
+                  <td colSpan={5} className="text-center text-secondary py-4">
+                    No wallet transactions yet.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

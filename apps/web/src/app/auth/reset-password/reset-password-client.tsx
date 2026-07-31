@@ -9,14 +9,10 @@ import { API_URL } from "@/lib/api";
 export function ResetPasswordClient() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("");
-  const [variant, setVariant] = useState<
-    "success" | "danger"
-  >("success");
+  const [variant, setVariant] = useState<"success" | "danger">("success");
   const [busy, setBusy] = useState(false);
 
-  async function submit(
-    event: FormEvent<HTMLFormElement>
-  ): Promise<void> {
+  async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setBusy(true);
     setMessage("");
@@ -31,19 +27,16 @@ export function ResetPasswordClient() {
       return;
     }
 
-    const response = await fetch(
-      `${API_URL}/api/v1/auth/reset-password`,
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          token,
-          password: formData.get("password")
-        })
-      }
-    );
+    const response = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        password: formData.get("password"),
+      }),
+    });
 
     const payload = await response.json();
 
@@ -52,7 +45,7 @@ export function ResetPasswordClient() {
     setMessage(
       response.ok
         ? "Password changed. Sign in again."
-        : payload.error?.message ?? "Password reset failed."
+        : (payload.error?.message ?? "Password reset failed."),
     );
   }
 
@@ -76,15 +69,11 @@ export function ResetPasswordClient() {
             required
           />
           <div className="form-text">
-            Use at least 12 characters with uppercase,
-            lowercase and a number.
+            Use at least 12 characters with uppercase, lowercase and a number.
           </div>
         </div>
 
-        <button
-          className="btn btn-primary w-100"
-          disabled={busy}
-        >
+        <button className="btn btn-primary w-100" disabled={busy}>
           {busy ? (
             <>
               <span

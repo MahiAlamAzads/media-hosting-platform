@@ -2,16 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
-import {
-  EmptyState,
-  Feedback,
-  LoadingBlock
-} from "@/components/feedback";
-import {
-  API_URL,
-  apiRequest,
-  getAccessToken
-} from "@/lib/api";
+import { EmptyState, Feedback, LoadingBlock } from "@/components/feedback";
+import { API_URL, apiRequest, getAccessToken } from "@/lib/api";
 
 type Payment = {
   id: string;
@@ -48,13 +40,10 @@ type ReviewState = {
   action: "approve" | "reject";
 } | null;
 
-function money(
-  value: string,
-  currency: "BDT" | "USD"
-): string {
+function money(value: string, currency: "BDT" | "USD"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency
+    currency,
   }).format(Number(value) / 100);
 }
 
@@ -71,9 +60,7 @@ export default function AdminPaymentsPage() {
   const [items, setItems] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [variant, setVariant] = useState<"success" | "danger">(
-    "success"
-  );
+  const [variant, setVariant] = useState<"success" | "danger">("success");
   const [status, setStatus] = useState("UNDER_REVIEW");
   const [busy, setBusy] = useState("");
   const [review, setReview] = useState<ReviewState>(null);
@@ -85,7 +72,7 @@ export default function AdminPaymentsPage() {
         ? `?status=${encodeURIComponent(nextStatus)}`
         : "";
       const response = await apiRequest<{ data: Payment[] }>(
-        `/api/v1/admin/payments${suffix}`
+        `/api/v1/admin/payments${suffix}`,
       );
       setItems(response.data);
     } catch (error) {
@@ -101,7 +88,7 @@ export default function AdminPaymentsPage() {
   }, []);
 
   async function submitReview(
-    event: FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
     if (!review) return;
@@ -120,23 +107,21 @@ export default function AdminPaymentsPage() {
 
     try {
       const path = review.action === "approve" ? "approve" : "reject";
-      const body = review.action === "approve"
-        ? { note: text || "Payment verified by platform administrator." }
-        : { reason: text };
+      const body =
+        review.action === "approve"
+          ? { note: text || "Payment verified by platform administrator." }
+          : { reason: text };
 
-      await apiRequest(
-        `/api/v1/admin/payments/${review.payment.id}/${path}`,
-        {
-          method: "POST",
-          body: JSON.stringify(body)
-        }
-      );
+      await apiRequest(`/api/v1/admin/payments/${review.payment.id}/${path}`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
 
       setVariant("success");
       setMessage(
         review.action === "approve"
           ? "Payment approved and subscription activated."
-          : "Payment rejected. The invoice remains open for another attempt."
+          : "Payment rejected. The invoice remains open for another attempt.",
       );
       setReview(null);
       await load();
@@ -153,9 +138,9 @@ export default function AdminPaymentsPage() {
       `${API_URL}/api/v1/admin/payments/${payment.id}/proof`,
       {
         headers: {
-          authorization: `Bearer ${getAccessToken()}`
-        }
-      }
+          authorization: `Bearer ${getAccessToken()}`,
+        },
+      },
     );
 
     if (!response.ok) {
@@ -178,10 +163,7 @@ export default function AdminPaymentsPage() {
         <a className="btn btn-outline-primary" href="/billing-control">
           Billing control
         </a>
-        <a
-          className="btn btn-outline-secondary"
-          href="/payment-accounts"
-        >
+        <a className="btn btn-outline-secondary" href="/payment-accounts">
           Payment accounts
         </a>
       </PageHeader>
@@ -225,10 +207,7 @@ export default function AdminPaymentsPage() {
               <div className="col-md-4">
                 <div className="small text-secondary">Amount</div>
                 <strong>
-                  {money(
-                    review.payment.amountMinor,
-                    review.payment.currency
-                  )}
+                  {money(review.payment.amountMinor, review.payment.currency)}
                 </strong>
               </div>
               <div className="col-12">
@@ -283,7 +262,7 @@ export default function AdminPaymentsPage() {
             className="form-select form-select-sm admin-status-filter"
             value={status}
             aria-label="Payment status filter"
-            onChange={event => {
+            onChange={(event) => {
               setStatus(event.target.value);
               void load(event.target.value);
             }}
@@ -298,8 +277,8 @@ export default function AdminPaymentsPage() {
               "CANCELLED",
               "REJECTED",
               "EXPIRED",
-              "REFUNDED"
-            ].map(value => (
+              "REFUNDED",
+            ].map((value) => (
               <option value={value} key={value}>
                 {value}
               </option>
@@ -332,7 +311,7 @@ export default function AdminPaymentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map(item => (
+                {items.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <strong>{item.invoice.number}</strong>
@@ -370,9 +349,7 @@ export default function AdminPaymentsPage() {
                       )}
                     </td>
                     <td>
-                      <span
-                        className={`badge ${statusClass(item.status)}`}
-                      >
+                      <span className={`badge ${statusClass(item.status)}`}>
                         {item.status}
                       </span>
                     </td>
@@ -396,7 +373,7 @@ export default function AdminPaymentsPage() {
                               onClick={() =>
                                 setReview({
                                   payment: item,
-                                  action: "approve"
+                                  action: "approve",
                                 })
                               }
                             >
@@ -409,7 +386,7 @@ export default function AdminPaymentsPage() {
                               onClick={() =>
                                 setReview({
                                   payment: item,
-                                  action: "reject"
+                                  action: "reject",
                                 })
                               }
                             >

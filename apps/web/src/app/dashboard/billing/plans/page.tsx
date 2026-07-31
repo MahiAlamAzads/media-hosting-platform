@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/api";
 import {
   formatMetricValue,
   metricLabels,
-  type UsageMetricName
+  type UsageMetricName,
 } from "@/lib/billing-format";
 
 type Currency = "BDT" | "USD";
@@ -52,13 +52,17 @@ const highlights: UsageMetricName[] = [
   "UPLOAD_BYTES",
   "MAX_FILE_SIZE_BYTES",
   "ACTIVE_ASSETS",
-  "API_KEYS"
+  "API_KEYS",
 ];
 
-const terms: Array<{ value: Exclude<Term, "FREE">; label: string; hint: string }> = [
+const terms: Array<{
+  value: Exclude<Term, "FREE">;
+  label: string;
+  hint: string;
+}> = [
   { value: "THREE_MONTHS", label: "3 months", hint: "Short commitment" },
   { value: "SIX_MONTHS", label: "6 months", hint: "Balanced term" },
-  { value: "ONE_YEAR", label: "1 year", hint: "Best annual value" }
+  { value: "ONE_YEAR", label: "1 year", hint: "Best annual value" },
 ];
 
 export default function BillingPlansPage() {
@@ -69,22 +73,21 @@ export default function BillingPlansPage() {
   const [loading, setLoading] = useState(true);
   const [busyPlan, setBusyPlan] = useState("");
   const [message, setMessage] = useState("");
-  const [variant, setVariant] =
-    useState<"success" | "danger" | "warning">("success");
+  const [variant, setVariant] = useState<"success" | "danger" | "warning">(
+    "success",
+  );
 
   async function load(nextCurrency?: Currency): Promise<void> {
     setLoading(true);
     try {
-      const subscriptionResponse =
-        await apiRequest<{ data: Subscription }>(
-          "/api/v1/billing/subscription"
-        );
+      const subscriptionResponse = await apiRequest<{ data: Subscription }>(
+        "/api/v1/billing/subscription",
+      );
       const selectedCurrency =
         nextCurrency ?? subscriptionResponse.data.currency;
-      const plansResponse =
-        await apiRequest<{ data: { plans: Plan[] } }>(
-          `/api/v1/billing/plans?currency=${selectedCurrency}`
-        );
+      const plansResponse = await apiRequest<{ data: { plans: Plan[] } }>(
+        `/api/v1/billing/plans?currency=${selectedCurrency}`,
+      );
       setSubscription(subscriptionResponse.data);
       setPlans(plansResponse.data.plans);
       setCurrency(selectedCurrency);
@@ -101,8 +104,7 @@ export default function BillingPlansPage() {
   }, []);
 
   async function selectPlan(plan: Plan): Promise<void> {
-    const selectedTerm: Term =
-      plan.code === "FREE" ? "FREE" : term;
+    const selectedTerm: Term = plan.code === "FREE" ? "FREE" : term;
     setBusyPlan(plan.code);
     setMessage("");
     try {
@@ -116,13 +118,13 @@ export default function BillingPlansPage() {
         body: JSON.stringify({
           planCode: plan.code,
           currency,
-          term: selectedTerm
-        })
+          term: selectedTerm,
+        }),
       });
 
       if (response.data.paymentRequired && response.data.invoice) {
         window.location.assign(
-          `/dashboard/billing/payments/${response.data.invoice.id}`
+          `/dashboard/billing/payments/${response.data.invoice.id}`,
         );
         return;
       }
@@ -144,10 +146,16 @@ export default function BillingPlansPage() {
         title="Subscription plans"
         subtitle="Choose Free, 3 months, 6 months or 1 year. Paid terms are invoiced upfront."
       >
-        <a className="btn btn-outline-secondary" href="/dashboard/billing/revenue-model">
+        <a
+          className="btn btn-outline-secondary"
+          href="/dashboard/billing/revenue-model"
+        >
           Revenue options
         </a>
-        <a className="btn btn-outline-success" href="/dashboard/billing/pay-as-you-go">
+        <a
+          className="btn btn-outline-success"
+          href="/dashboard/billing/pay-as-you-go"
+        >
           Prepaid PAYG
         </a>
       </PageHeader>
@@ -157,8 +165,8 @@ export default function BillingPlansPage() {
       {subscription?.pendingChange && (
         <div className="alert alert-warning d-flex flex-wrap justify-content-between gap-3">
           <span>
-            Pending: <strong>{subscription.pendingChange.planName}</strong>{" "}
-            · {subscription.pendingChange.subscriptionTerm.replaceAll("_", " ")}
+            Pending: <strong>{subscription.pendingChange.planName}</strong> ·{" "}
+            {subscription.pendingChange.subscriptionTerm.replaceAll("_", " ")}
           </span>
           {subscription.pendingChange.invoice && (
             <a
@@ -173,7 +181,7 @@ export default function BillingPlansPage() {
 
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div className="btn-group">
-          {(["BDT", "USD"] as Currency[]).map(value => (
+          {(["BDT", "USD"] as Currency[]).map((value) => (
             <button
               key={value}
               className={`btn ${currency === value ? "btn-primary" : "btn-outline-primary"}`}
@@ -188,7 +196,7 @@ export default function BillingPlansPage() {
         </div>
 
         <div className="btn-group">
-          {terms.map(item => (
+          {terms.map((item) => (
             <button
               key={item.value}
               className={`btn ${term === item.value ? "btn-dark" : "btn-outline-dark"}`}
@@ -201,12 +209,15 @@ export default function BillingPlansPage() {
         </div>
       </div>
 
-      {loading ? <LoadingBlock label="Loading subscription offers…" /> : (
+      {loading ? (
+        <LoadingBlock label="Loading subscription offers…" />
+      ) : (
         <div className="row g-4">
-          {plans.map(plan => {
-            const selectedTerm: Term =
-              plan.code === "FREE" ? "FREE" : term;
-            const offer = plan.offers.find(item => item.term === selectedTerm);
+          {plans.map((plan) => {
+            const selectedTerm: Term = plan.code === "FREE" ? "FREE" : term;
+            const offer = plan.offers.find(
+              (item) => item.term === selectedTerm,
+            );
             const current =
               subscription?.revenueModel === "SUBSCRIPTION" &&
               subscription.plan.code === plan.code &&
@@ -215,11 +226,15 @@ export default function BillingPlansPage() {
 
             return (
               <div className="col-md-6 col-xl-3" key={plan.id}>
-                <article className={`card h-100 pricing-card ${current ? "border-primary" : ""}`}>
+                <article
+                  className={`card h-100 pricing-card ${current ? "border-primary" : ""}`}
+                >
                   <div className="card-body p-4 d-flex flex-column">
                     <div className="d-flex justify-content-between gap-2 mb-2">
                       <h2 className="h4 mb-0">{plan.name}</h2>
-                      {current && <span className="badge text-bg-primary">Current</span>}
+                      {current && (
+                        <span className="badge text-bg-primary">Current</span>
+                      )}
                     </div>
                     <p className="small text-secondary">{plan.description}</p>
 
@@ -229,20 +244,28 @@ export default function BillingPlansPage() {
                     <div className="small text-secondary mb-4">
                       {plan.code === "FREE"
                         ? "No commitment"
-                        : terms.find(item => item.value === term)?.label}
+                        : terms.find((item) => item.value === term)?.label}
                     </div>
 
                     <ul className="list-unstyled small flex-grow-1">
-                      {highlights.map(metric => {
+                      {highlights.map((metric) => {
                         const entitlement = plan.entitlements.find(
-                          item => item.metric === metric
+                          (item) => item.metric === metric,
                         );
                         if (!entitlement) return null;
                         return (
-                          <li className="d-flex justify-content-between gap-3 py-2 border-bottom" key={metric}>
-                            <span className="text-secondary">{metricLabels[metric]}</span>
+                          <li
+                            className="d-flex justify-content-between gap-3 py-2 border-bottom"
+                            key={metric}
+                          >
+                            <span className="text-secondary">
+                              {metricLabels[metric]}
+                            </span>
                             <strong className="text-end">
-                              {formatMetricValue(metric, entitlement.includedAmount)}
+                              {formatMetricValue(
+                                metric,
+                                entitlement.includedAmount,
+                              )}
                             </strong>
                           </li>
                         );
@@ -273,16 +296,22 @@ export default function BillingPlansPage() {
               <div className="card-body p-4 d-flex flex-column">
                 <h2 className="h4">Enterprise</h2>
                 <p className="text-secondary small">
-                  Custom capacity, pricing, migration, support and contract terms.
+                  Custom capacity, pricing, migration, support and contract
+                  terms.
                 </p>
-                <div className="display-6 fw-semibold mb-4">Let&apos;s talk</div>
+                <div className="display-6 fw-semibold mb-4">
+                  Let&apos;s talk
+                </div>
                 <ul className="small text-secondary ps-3 flex-grow-1">
                   <li>Custom storage and bandwidth</li>
                   <li>Negotiated commercial terms</li>
                   <li>Onboarding and migration support</li>
                   <li>Priority support and service commitments</li>
                 </ul>
-                <a className="btn btn-dark mt-4" href="/dashboard/billing/enterprise">
+                <a
+                  className="btn btn-dark mt-4"
+                  href="/dashboard/billing/enterprise"
+                >
                   Talk to sales
                 </a>
               </div>

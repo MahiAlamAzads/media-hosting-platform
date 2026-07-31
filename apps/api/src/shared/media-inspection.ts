@@ -10,7 +10,7 @@ function startsWith(buffer: Buffer, signature: number[]): boolean {
 }
 
 export async function inspectStoredMedia(
-  storageKey: string
+  storageKey: string,
 ): Promise<DetectedMedia> {
   const buffer = await readStoragePrefix(storageKey);
 
@@ -22,8 +22,10 @@ export async function inspectStoredMedia(
     return { contentType: "image/png", mediaType: "IMAGE" };
   }
 
-  if (buffer.subarray(0, 6).toString("ascii") === "GIF87a" ||
-      buffer.subarray(0, 6).toString("ascii") === "GIF89a") {
+  if (
+    buffer.subarray(0, 6).toString("ascii") === "GIF87a" ||
+    buffer.subarray(0, 6).toString("ascii") === "GIF89a"
+  ) {
     return { contentType: "image/gif", mediaType: "IMAGE" };
   }
 
@@ -64,13 +66,13 @@ export async function inspectStoredMedia(
 
   return {
     contentType: "application/octet-stream",
-    mediaType: "OTHER"
+    mediaType: "OTHER",
   };
 }
 
 export function declaredTypeMatchesDetectedType(
   declaredContentType: string,
-  detected: DetectedMedia
+  detected: DetectedMedia,
 ): boolean {
   if (detected.contentType === "application/octet-stream") {
     return true;

@@ -11,12 +11,13 @@ describe("Phase 8 pricing and billing contracts", () => {
     ["GET", "/api/v1/billing/plans"],
     ["GET", "/api/v1/admin/plans"],
     ["GET", "/api/v1/admin/subscriptions"],
-    ["GET", "/api/v1/admin/usage"]
+    ["GET", "/api/v1/admin/usage"],
   ])("%s %s requires authentication", async (method, route) => {
     const agent = request(app);
-    const response = method === "GET"
-      ? await agent.get(route)
-      : await agent.post(route).send({});
+    const response =
+      method === "GET"
+        ? await agent.get(route)
+        : await agent.post(route).send({});
 
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe("AUTH_REQUIRED");
@@ -25,9 +26,11 @@ describe("Phase 8 pricing and billing contracts", () => {
   it("documents the dual-currency pricing and administration surface internally", () => {
     const openapi = JSON.parse(
       readFileSync(
-        fileURLToPath(new URL("../../src/openapi/openapi.json", import.meta.url)),
-        "utf8"
-      )
+        fileURLToPath(
+          new URL("../../src/openapi/openapi.json", import.meta.url),
+        ),
+        "utf8",
+      ),
     );
 
     expect(openapi.paths["/api/v1/pricing"]).toBeDefined();
@@ -37,7 +40,7 @@ describe("Phase 8 pricing and billing contracts", () => {
     expect(
       openapi.paths[
         "/api/v1/admin/subscriptions/{workspaceId}/changes/{changeId}/reject"
-      ]
+      ],
     ).toBeDefined();
   });
 });

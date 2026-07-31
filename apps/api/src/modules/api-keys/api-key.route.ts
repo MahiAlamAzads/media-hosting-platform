@@ -1,8 +1,5 @@
 import { Router } from "express";
-import {
-  authenticate,
-  requireUser
-} from "../../middleware/authenticate.js";
+import { authenticate, requireUser } from "../../middleware/authenticate.js";
 import { asyncHandler } from "../../shared/http.js";
 import { ApiKeyController } from "./api-key.controller.js";
 import { ApiKeyRepository } from "./api-key.repository.js";

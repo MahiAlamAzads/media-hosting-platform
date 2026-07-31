@@ -34,17 +34,16 @@ app.use(
       "req.body.currentPassword",
       "req.body.newPassword",
       "req.body.token",
-      "req.body.rawKey"
-    ]
-  })
+      "req.body.rawKey",
+    ],
+  }),
 );
 
 app.use(helmet());
 const restrictedCors = cors({
   origin(origin, callback) {
-    const allowedOrigins = env.CORS_ALLOWED_ORIGINS
-      .split(",")
-      .map(value => value.trim())
+    const allowedOrigins = env.CORS_ALLOWED_ORIGINS.split(",")
+      .map((value) => value.trim())
       .filter(Boolean);
 
     if (!origin || allowedOrigins.includes(origin)) {
@@ -52,32 +51,25 @@ const restrictedCors = cors({
       return;
     }
 
-    callback(
-      new AppError(
-        403,
-        "CORS_REJECTED",
-        "Origin is not allowed."
-      )
-    );
+    callback(new AppError(403, "CORS_REJECTED", "Origin is not allowed."));
   },
-  credentials: true
+  credentials: true,
 });
 
 app.use((req, res, next) => {
   const isPublicMediaRequest =
-    req.path.startsWith("/i/") ||
-    req.path.startsWith("/api/v1/public/media/");
+    req.path.startsWith("/i/") || req.path.startsWith("/api/v1/public/media/");
 
   if (isPublicMediaRequest) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Range, If-None-Match, If-Modified-Since"
+      "Range, If-None-Match, If-Modified-Since",
     );
     res.setHeader(
       "Access-Control-Expose-Headers",
-      "Content-Length, Content-Type, Cache-Control, ETag"
+      "Content-Length, Content-Type, Cache-Control, ETag",
     );
 
     if (req.method === "OPTIONS") {
@@ -103,7 +95,7 @@ app.get("/health/ready", (_req, res) => {
   const ready = !redis.required || redis.isReady;
 
   res.status(ready ? 200 : 503).json({
-    status: ready ? "ready" : "not_ready"
+    status: ready ? "ready" : "not_ready",
   });
 });
 
@@ -113,7 +105,7 @@ app.get("/health/redis", (_req, res) => {
     configured: redis.configured,
     required: redis.required,
     status: redis.status,
-    isReady: redis.isReady
+    isReady: redis.isReady,
   });
 });
 
@@ -127,7 +119,11 @@ app.get("/health/storage", async (_req, res, next) => {
 
 // Raw-body modules must be mounted before the global JSON parser.
 for (const module of rawBodyApiModules) {
-  app.use(module.mountPath, express.raw({ type: module.rawBody.type, limit: module.rawBody.limit }), module.router);
+  app.use(
+    module.mountPath,
+    express.raw({ type: module.rawBody.type, limit: module.rawBody.limit }),
+    module.router,
+  );
 }
 
 // JSON parsing must run before upload initialization. It does not consume
@@ -140,7 +136,7 @@ const standardApiLimiter = rateLimit({
   limit: 120,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  store: new RedisRateLimitStore("standard")
+  store: new RedisRateLimitStore("standard"),
 });
 
 const publicMediaLimiter = rateLimit({
@@ -148,13 +144,12 @@ const publicMediaLimiter = rateLimit({
   limit: 3_000,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  store: new RedisRateLimitStore("public-media")
+  store: new RedisRateLimitStore("public-media"),
 });
 
 app.use((req, res, next) => {
   const isPublicMediaRequest =
-    req.path.startsWith("/i/") ||
-    req.path.startsWith("/api/v1/public/media/");
+    req.path.startsWith("/i/") || req.path.startsWith("/api/v1/public/media/");
 
   const limiter = isPublicMediaRequest
     ? publicMediaLimiter
@@ -173,38 +168,27 @@ app.use((_req, res) => {
   res.status(404).json({
     error: {
       code: "NOT_FOUND",
-      message: "Route not found."
-    }
+      message: "Route not found.",
+    },
   });
 });
 
-const errorHandler: ErrorRequestHandler = (
-  error,
-  req,
-  res,
-  _next
-) => {
+const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   if (error instanceof ZodError) {
     res.status(422).json({
       error: {
         code: "VALIDATION_ERROR",
         message: "The request contains invalid fields.",
         fields: error.flatten().fieldErrors,
-        requestId: req.id
-      }
+        requestId: req.id,
+      },
     });
     return;
   }
 
-  const statusCode =
-    error instanceof AppError
-      ? error.statusCode
-      : 500;
+  const statusCode = error instanceof AppError ? error.statusCode : 500;
 
-  const code =
-    error instanceof AppError
-      ? error.code
-      : "INTERNAL_ERROR";
+  const code = error instanceof AppError ? error.code : "INTERNAL_ERROR";
 
   req.log.error({ err: error }, "request failed");
 
@@ -212,14 +196,10 @@ const errorHandler: ErrorRequestHandler = (
     error: {
       code,
       message:
-        statusCode === 500
-          ? "An unexpected error occurred."
-          : error.message,
-      ...(error instanceof AppError && error.details
-        ? error.details
-        : {}),
-      requestId: req.id
-    }
+        statusCode === 500 ? "An unexpected error occurred." : error.message,
+      ...(error instanceof AppError && error.details ? error.details : {}),
+      requestId: req.id,
+    },
   });
 };
 

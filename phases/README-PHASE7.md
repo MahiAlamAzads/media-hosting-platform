@@ -1,6 +1,7 @@
 # Phase 7 — Production auth completion (server + client)
 
 Server:
+
 - Every JWT request checks session, user status, verification, password version, membership and workspace status in PostgreSQL.
 - Refresh rotation records replacement sessions and detects reuse.
 - Refresh reuse revokes the entire token family and creates a security event.
@@ -10,6 +11,7 @@ Server:
 - Password reset revokes all sessions.
 
 Client:
+
 - Login and registration
 - Verify email
 - Resend/forgot/reset flows

@@ -1,12 +1,12 @@
 import type {
   BillingCurrencyName,
   BillingIntervalName,
-  SubscriptionTermName
+  SubscriptionTermName,
 } from "./billing.types.js";
 
 export function formatMoneyMinor(
   amountMinor: bigint,
-  currency: BillingCurrencyName
+  currency: BillingCurrencyName,
 ): string {
   const negative = amountMinor < 0n;
   const absolute = negative ? -amountMinor : amountMinor;
@@ -23,7 +23,7 @@ export function formatMoneyMinor(
 
 export function getPeriodBounds(
   startsAt: Date,
-  interval: BillingIntervalName
+  interval: BillingIntervalName,
 ): { start: Date; end: Date } {
   const start = new Date(startsAt);
   start.setUTCMilliseconds(0);
@@ -45,7 +45,7 @@ export function getPeriodBounds(
   const targetYear = end.getUTCFullYear();
   const targetMonth = end.getUTCMonth();
   const lastTargetDay = new Date(
-    Date.UTC(targetYear, targetMonth + 1, 0)
+    Date.UTC(targetYear, targetMonth + 1, 0),
   ).getUTCDate();
 
   end.setUTCDate(Math.min(anchorDay, lastTargetDay));
@@ -53,16 +53,15 @@ export function getPeriodBounds(
   return { start, end };
 }
 
-
 export function subscriptionTermToInterval(
-  term: SubscriptionTermName
+  term: SubscriptionTermName,
 ): BillingIntervalName {
   return term === "ONE_YEAR" ? "YEARLY" : "MONTHLY";
 }
 
 export function getSubscriptionCommitmentBounds(
   startsAt: Date,
-  term: SubscriptionTermName
+  term: SubscriptionTermName,
 ): { start: Date; end: Date } {
   const start = new Date(startsAt);
   start.setUTCMilliseconds(0);
@@ -70,39 +69,31 @@ export function getSubscriptionCommitmentBounds(
   if (term === "FREE") {
     return {
       start,
-      end: new Date(Date.UTC(9999, 11, 31, 23, 59, 59))
+      end: new Date(Date.UTC(9999, 11, 31, 23, 59, 59)),
     };
   }
 
   if (term === "ENTERPRISE_CUSTOM") {
     throw new Error(
-      "Enterprise commitment dates must be set by a platform administrator."
+      "Enterprise commitment dates must be set by a platform administrator.",
     );
   }
 
-  const months =
-    term === "THREE_MONTHS"
-      ? 3
-      : term === "SIX_MONTHS"
-        ? 6
-        : 12;
+  const months = term === "THREE_MONTHS" ? 3 : term === "SIX_MONTHS" ? 6 : 12;
 
   const end = new Date(start);
   const anchorDay = start.getUTCDate();
   end.setUTCDate(1);
   end.setUTCMonth(end.getUTCMonth() + months);
   const lastTargetDay = new Date(
-    Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)
+    Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0),
   ).getUTCDate();
   end.setUTCDate(Math.min(anchorDay, lastTargetDay));
 
   return { start, end };
 }
 
-export function calculateUsagePercent(
-  current: bigint,
-  limit: bigint
-): number {
+export function calculateUsagePercent(current: bigint, limit: bigint): number {
   if (limit <= 0n) return current > 0n ? 100 : 0;
   const basisPoints = (current * 10_000n) / limit;
   return Number(basisPoints) / 100;
@@ -112,12 +103,12 @@ export function projectUsage(
   current: bigint,
   periodStart: Date,
   periodEnd: Date,
-  now = new Date()
+  now = new Date(),
 ): bigint {
   const total = Math.max(1, periodEnd.getTime() - periodStart.getTime());
   const elapsed = Math.max(
     1,
-    Math.min(total, now.getTime() - periodStart.getTime())
+    Math.min(total, now.getTime() - periodStart.getTime()),
   );
 
   return (current * BigInt(total)) / BigInt(elapsed);

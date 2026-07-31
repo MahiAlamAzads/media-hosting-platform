@@ -12,7 +12,7 @@ export class ApiKeyController {
 
     res.json({
       data: items,
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
   };
 
@@ -20,22 +20,19 @@ export class ApiKeyController {
     const item = await this.service.create({
       workspaceId: req.auth!.workspaceId,
       userId: req.auth!.userId,
-      body: req.body
+      body: req.body,
     });
 
     res.status(201).json({
       data: item,
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
   };
 
   revoke = async (req: Request, res: Response): Promise<void> => {
     const apiKeyId = routeIdSchema.parse(req.params.apiKeyId);
 
-    await this.service.revoke(
-      req.auth!.workspaceId,
-      apiKeyId
-    );
+    await this.service.revoke(req.auth!.workspaceId, apiKeyId);
 
     res.status(204).send();
   };

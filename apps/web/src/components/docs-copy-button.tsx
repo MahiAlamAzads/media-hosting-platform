@@ -4,7 +4,7 @@ import { useState } from "react";
 
 export function DocsCopyButton({
   value,
-  label = "Copy"
+  label = "Copy",
 }: {
   value: string;
   label?: string;

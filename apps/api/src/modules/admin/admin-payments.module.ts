@@ -4,9 +4,13 @@ import { AdminPaymentsHttpRepository } from "./admin-payments.facade.repository.
 import { AdminPaymentsHttpRoute } from "./admin-payments.facade.route.js";
 import { AdminPaymentsHttpService } from "./admin-payments.facade.service.js";
 import { AdminPaymentsHttpValidation } from "./admin-payments.facade.validation.js";
-const repository=new AdminPaymentsHttpRepository();
-const validation=new AdminPaymentsHttpValidation();
-const service=new AdminPaymentsHttpService(repository,validation);
-const controller=new AdminPaymentsHttpController(service);
-const route=new AdminPaymentsHttpRoute(controller);
-export const adminPaymentsModule: ApiModuleDescriptor={name:"admin-payments",mountPath:"/api/v1/admin",router:route.router};
+const repository = new AdminPaymentsHttpRepository();
+const validation = new AdminPaymentsHttpValidation();
+const service = new AdminPaymentsHttpService(repository, validation);
+const controller = new AdminPaymentsHttpController(service);
+const route = new AdminPaymentsHttpRoute(controller);
+export const adminPaymentsModule: ApiModuleDescriptor = {
+  name: "admin-payments",
+  mountPath: "/api/v1/admin",
+  router: route.router,
+};

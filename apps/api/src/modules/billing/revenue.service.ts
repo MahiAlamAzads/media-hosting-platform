@@ -5,29 +5,23 @@ import { createInvoiceNumber } from "../payments/payment.utils.js";
 import {
   getPeriodBounds,
   getSubscriptionCommitmentBounds,
-  subscriptionTermToInterval
+  subscriptionTermToInterval,
 } from "./billing.utils.js";
 import type {
   BillingCurrencyName,
-  SubscriptionTermName
+  SubscriptionTermName,
 } from "./billing.types.js";
 
 export type RevenueModelName =
-  | "SUBSCRIPTION"
-  | "PREPAID_PAYG"
-  | "ENTERPRISE_CUSTOM";
+  "SUBSCRIPTION" | "PREPAID_PAYG" | "ENTERPRISE_CUSTOM";
 
-export function minimumTopupMinor(
-  currency: BillingCurrencyName
-): bigint {
+export function minimumTopupMinor(currency: BillingCurrencyName): bigint {
   return currency === "BDT"
     ? BigInt(env.PAYG_MINIMUM_TOPUP_BDT_MINOR)
     : BigInt(env.PAYG_MINIMUM_TOPUP_USD_MINOR);
 }
 
-export function defaultLowBalanceMinor(
-  currency: BillingCurrencyName
-): bigint {
+export function defaultLowBalanceMinor(currency: BillingCurrencyName): bigint {
   return currency === "BDT"
     ? BigInt(env.PAYG_LOW_BALANCE_BDT_MINOR)
     : BigInt(env.PAYG_LOW_BALANCE_USD_MINOR);
@@ -36,10 +30,10 @@ export function defaultLowBalanceMinor(
 export async function ensurePrepaidWalletInTransaction(
   tx: Prisma.TransactionClient,
   workspaceId: string,
-  currency: BillingCurrencyName
+  currency: BillingCurrencyName,
 ) {
   const existing = await tx.prepaidWallet.findUnique({
-    where: { workspaceId }
+    where: { workspaceId },
   });
 
   if (existing && existing.currency !== currency) {
@@ -47,7 +41,7 @@ export async function ensurePrepaidWalletInTransaction(
       throw new AppError(
         409,
         "WALLET_CURRENCY_LOCKED",
-        "Wallet currency cannot change while it has a balance or reserved funds."
+        "Wallet currency cannot change while it has a balance or reserved funds.",
       );
     }
 
@@ -55,8 +49,8 @@ export async function ensurePrepaidWalletInTransaction(
       where: { id: existing.id },
       data: {
         currency,
-        lowBalanceThresholdMinor: defaultLowBalanceMinor(currency)
-      }
+        lowBalanceThresholdMinor: defaultLowBalanceMinor(currency),
+      },
     });
   }
 
@@ -66,8 +60,8 @@ export async function ensurePrepaidWalletInTransaction(
     data: {
       workspaceId,
       currency,
-      lowBalanceThresholdMinor: defaultLowBalanceMinor(currency)
-    }
+      lowBalanceThresholdMinor: defaultLowBalanceMinor(currency),
+    },
   });
 }
 
@@ -78,7 +72,7 @@ export async function createWalletTopupInvoice(
     requestedById: string;
     currency: BillingCurrencyName;
     amountMinor: bigint;
-  }
+  },
 ) {
   const subscription = await tx.workspaceSubscription.findUnique({
     where: { workspaceId: input.workspaceId },
@@ -88,18 +82,18 @@ export async function createWalletTopupInvoice(
           plan: true,
           entitlements: {
             where: { metric: "STORAGE_BYTES" },
-            take: 1
-          }
-        }
-      }
-    }
+            take: 1,
+          },
+        },
+      },
+    },
   });
 
   if (!subscription) {
     throw new AppError(
       503,
       "BILLING_NOT_CONFIGURED",
-      "Workspace billing is not configured."
+      "Workspace billing is not configured.",
     );
   }
 
@@ -107,7 +101,7 @@ export async function createWalletTopupInvoice(
     throw new AppError(
       409,
       "WALLET_CURRENCY_MISMATCH",
-      "Top-up currency must match the workspace billing currency."
+      "Top-up currency must match the workspace billing currency.",
     );
   }
 
@@ -119,8 +113,8 @@ export async function createWalletTopupInvoice(
       "The top-up amount is below the minimum.",
       {
         minimumAmountMinor: minimum.toString(),
-        currency: input.currency
-      }
+        currency: input.currency,
+      },
     );
   }
 
@@ -131,11 +125,7 @@ export async function createWalletTopupInvoice(
     FOR UPDATE
   `;
 
-  await ensurePrepaidWalletInTransaction(
-    tx,
-    input.workspaceId,
-    input.currency
-  );
+  await ensurePrepaidWalletInTransaction(tx, input.workspaceId, input.currency);
 
   const now = new Date();
   const dueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -161,9 +151,9 @@ export async function createWalletTopupInvoice(
         amountMinor: input.amountMinor.toString(),
         currency: input.currency,
         planCode: subscription.planVersion.plan.code,
-        planName: subscription.planVersion.plan.name
-      }
-    }
+        planName: subscription.planVersion.plan.name,
+      },
+    },
   });
 }
 
@@ -175,7 +165,7 @@ export async function createSubscriptionOfferInvoice(
     planCode: string;
     currency: BillingCurrencyName;
     term: SubscriptionTermName;
-  }
+  },
 ) {
   const version = await tx.planVersion.findFirst({
     where: {
@@ -184,17 +174,17 @@ export async function createSubscriptionOfferInvoice(
       plan: {
         code: input.planCode,
         isActive: true,
-        isPublic: true
-      }
+        isPublic: true,
+      },
     },
     orderBy: { version: "desc" },
     include: {
       plan: true,
       entitlements: {
         where: { metric: "STORAGE_BYTES" },
-        take: 1
-      }
-    }
+        take: 1,
+      },
+    },
   });
 
   const offer = version
@@ -203,8 +193,8 @@ export async function createSubscriptionOfferInvoice(
           planVersionId_currency_term: {
             planVersionId: version.id,
             currency: input.currency,
-            term: input.term
-          }
+            term: input.term,
+          },
         },
         include: {
           planVersion: {
@@ -212,11 +202,11 @@ export async function createSubscriptionOfferInvoice(
               plan: true,
               entitlements: {
                 where: { metric: "STORAGE_BYTES" },
-                take: 1
-              }
-            }
-          }
-        }
+                take: 1,
+              },
+            },
+          },
+        },
       })
     : null;
 
@@ -224,7 +214,7 @@ export async function createSubscriptionOfferInvoice(
     throw new AppError(
       404,
       "SUBSCRIPTION_OFFER_NOT_FOUND",
-      "The selected subscription offer is unavailable."
+      "The selected subscription offer is unavailable.",
     );
   }
 
@@ -232,27 +222,27 @@ export async function createSubscriptionOfferInvoice(
   const current = await tx.subscriptionChange.findMany({
     where: {
       workspaceId: input.workspaceId,
-      status: { in: ["PAYMENT_PENDING", "PENDING", "APPROVED"] }
+      status: { in: ["PAYMENT_PENDING", "PENDING", "APPROVED"] },
     },
-    select: { id: true }
+    select: { id: true },
   });
 
   if (current.length > 0) {
-    const ids = current.map(item => item.id);
+    const ids = current.map((item) => item.id);
     await tx.subscriptionChange.updateMany({
       where: { id: { in: ids } },
       data: {
         status: "CANCELLED",
         reviewedAt: now,
-        note: "Superseded by a newer subscription offer."
-      }
+        note: "Superseded by a newer subscription offer.",
+      },
     });
     await tx.billingInvoice.updateMany({
       where: {
         subscriptionChangeId: { in: ids },
-        status: "OPEN"
+        status: "OPEN",
       },
-      data: { status: "VOID", voidedAt: now }
+      data: { status: "VOID", voidedAt: now },
     });
   }
 
@@ -269,8 +259,8 @@ export async function createSubscriptionOfferInvoice(
       interval,
       revenueModel: "SUBSCRIPTION",
       subscriptionTerm: input.term,
-      status: paymentRequired ? "PAYMENT_PENDING" : "PENDING"
-    }
+      status: paymentRequired ? "PAYMENT_PENDING" : "PENDING",
+    },
   });
 
   const invoice = paymentRequired
@@ -298,20 +288,16 @@ export async function createSubscriptionOfferInvoice(
             planName: offer.planVersion.plan.name,
             planVersion: offer.planVersion.version,
             amountMinor: offer.amountMinor.toString(),
-            currency: input.currency
-          }
-        }
+            currency: input.currency,
+          },
+        },
       })
     : null;
 
   if (!paymentRequired) {
-    const usagePeriod = getPeriodBounds(
-      now,
-      "MONTHLY"
-    );
+    const usagePeriod = getPeriodBounds(now, "MONTHLY");
 
-    const storageLimit =
-      offer.planVersion.entitlements[0]?.includedAmount;
+    const storageLimit = offer.planVersion.entitlements[0]?.includedAmount;
 
     await tx.workspaceSubscription.update({
       where: { workspaceId: input.workspaceId },
@@ -326,8 +312,8 @@ export async function createSubscriptionOfferInvoice(
         periodStart: usagePeriod.start,
         periodEnd: usagePeriod.end,
         cancelAtPeriodEnd: false,
-        graceEndsAt: null
-      }
+        graceEndsAt: null,
+      },
     });
 
     await tx.paygPolicy.updateMany({
@@ -335,8 +321,8 @@ export async function createSubscriptionOfferInvoice(
       data: {
         status: "DISABLED",
         pausedAt: null,
-        pauseReason: null
-      }
+        pauseReason: null,
+      },
     });
 
     await tx.billingPreference.upsert({
@@ -346,14 +332,14 @@ export async function createSubscriptionOfferInvoice(
         preferredCurrency: input.currency,
         preferredInterval: interval,
         revenueModel: "SUBSCRIPTION",
-        subscriptionTerm: input.term
+        subscriptionTerm: input.term,
       },
       update: {
         preferredCurrency: input.currency,
         preferredInterval: interval,
         revenueModel: "SUBSCRIPTION",
-        subscriptionTerm: input.term
-      }
+        subscriptionTerm: input.term,
+      },
     });
 
     await tx.subscriptionChange.update({
@@ -362,8 +348,8 @@ export async function createSubscriptionOfferInvoice(
         status: "APPLIED",
         effectiveAt: now,
         reviewedAt: now,
-        note: "Free subscription applied immediately."
-      }
+        note: "Free subscription applied immediately.",
+      },
     });
 
     if (storageLimit !== undefined) {
@@ -398,12 +384,12 @@ export async function activatePrepaidRevenueModel(
         | "PROCESSING_CPU_MILLISECONDS";
       metricSpendCapMinor?: bigint | null;
     }>;
-  }
+  },
 ) {
   const wallet = await ensurePrepaidWalletInTransaction(
     tx,
     input.workspaceId,
-    input.currency
+    input.currency,
   );
 
   const minimum = minimumTopupMinor(input.currency);
@@ -417,8 +403,8 @@ export async function activatePrepaidRevenueModel(
       {
         minimumTopupMinor: minimum.toString(),
         availableBalanceMinor: available.toString(),
-        currency: input.currency
-      }
+        currency: input.currency,
+      },
     );
   }
 
@@ -431,7 +417,7 @@ export async function activatePrepaidRevenueModel(
       monthlySpendCapMinor: wallet.balanceMinor,
       chargeThresholdMinor: minimum,
       consentVersion: "prepaid-payg-v1",
-      consentAt: new Date()
+      consentAt: new Date(),
     },
     update: {
       status: "ACTIVE",
@@ -442,22 +428,22 @@ export async function activatePrepaidRevenueModel(
       consentVersion: "prepaid-payg-v1",
       consentAt: new Date(),
       pausedAt: null,
-      pauseReason: null
-    }
+      pauseReason: null,
+    },
   });
 
   await tx.paygMetricSetting.deleteMany({
-    where: { policyId: policy.id }
+    where: { policyId: policy.id },
   });
 
   if (input.enabledMetrics.length > 0) {
     await tx.paygMetricSetting.createMany({
-      data: input.enabledMetrics.map(item => ({
+      data: input.enabledMetrics.map((item) => ({
         policyId: policy.id,
         metric: item.metric,
         enabled: true,
-        metricSpendCapMinor: item.metricSpendCapMinor ?? null
-      }))
+        metricSpendCapMinor: item.metricSpendCapMinor ?? null,
+      })),
     });
   }
 
@@ -468,13 +454,13 @@ export async function activatePrepaidRevenueModel(
       preferredCurrency: input.currency,
       preferredInterval: "MONTHLY",
       revenueModel: "PREPAID_PAYG",
-      subscriptionTerm: "FREE"
+      subscriptionTerm: "FREE",
     },
     update: {
       preferredCurrency: input.currency,
       revenueModel: "PREPAID_PAYG",
-      subscriptionTerm: "FREE"
-    }
+      subscriptionTerm: "FREE",
+    },
   });
 
   await tx.workspaceSubscription.update({
@@ -482,8 +468,8 @@ export async function activatePrepaidRevenueModel(
     data: {
       revenueModel: "PREPAID_PAYG",
       subscriptionTerm: "FREE",
-      commitmentEndsAt: null
-    }
+      commitmentEndsAt: null,
+    },
   });
 
   await tx.auditLog.create({
@@ -496,9 +482,9 @@ export async function activatePrepaidRevenueModel(
       metadata: {
         revenueModel: "PREPAID_PAYG",
         walletBalanceMinor: wallet.balanceMinor.toString(),
-        enabledMetrics: input.enabledMetrics.map(item => item.metric)
-      }
-    }
+        enabledMetrics: input.enabledMetrics.map((item) => item.metric),
+      },
+    },
   });
 
   return { wallet, policy };
@@ -509,21 +495,21 @@ export async function activateSubscriptionRevenueModel(
   input: {
     workspaceId: string;
     userId: string;
-  }
+  },
 ) {
   const preference = await tx.billingPreference.upsert({
     where: { workspaceId: input.workspaceId },
     create: {
       workspaceId: input.workspaceId,
       revenueModel: "SUBSCRIPTION",
-      subscriptionTerm: "FREE"
+      subscriptionTerm: "FREE",
     },
-    update: { revenueModel: "SUBSCRIPTION" }
+    update: { revenueModel: "SUBSCRIPTION" },
   });
 
   await tx.workspaceSubscription.update({
     where: { workspaceId: input.workspaceId },
-    data: { revenueModel: "SUBSCRIPTION" }
+    data: { revenueModel: "SUBSCRIPTION" },
   });
 
   await tx.paygPolicy.updateMany({
@@ -531,8 +517,8 @@ export async function activateSubscriptionRevenueModel(
     data: {
       status: "DISABLED",
       pausedAt: null,
-      pauseReason: null
-    }
+      pauseReason: null,
+    },
   });
 
   await tx.auditLog.create({
@@ -542,8 +528,8 @@ export async function activateSubscriptionRevenueModel(
       action: "billing.revenue_model_changed",
       entityType: "BillingPreference",
       entityId: input.workspaceId,
-      metadata: { revenueModel: "SUBSCRIPTION" }
-    }
+      metadata: { revenueModel: "SUBSCRIPTION" },
+    },
   });
 
   return preference;

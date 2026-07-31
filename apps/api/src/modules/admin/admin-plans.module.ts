@@ -4,9 +4,13 @@ import { AdminPlansHttpRepository } from "./admin-plans.facade.repository.js";
 import { AdminPlansHttpRoute } from "./admin-plans.facade.route.js";
 import { AdminPlansHttpService } from "./admin-plans.facade.service.js";
 import { AdminPlansHttpValidation } from "./admin-plans.facade.validation.js";
-const repository=new AdminPlansHttpRepository();
-const validation=new AdminPlansHttpValidation();
-const service=new AdminPlansHttpService(repository,validation);
-const controller=new AdminPlansHttpController(service);
-const route=new AdminPlansHttpRoute(controller);
-export const adminPlansModule: ApiModuleDescriptor={name:"admin-plans",mountPath:"/api/v1/admin",router:route.router};
+const repository = new AdminPlansHttpRepository();
+const validation = new AdminPlansHttpValidation();
+const service = new AdminPlansHttpService(repository, validation);
+const controller = new AdminPlansHttpController(service);
+const route = new AdminPlansHttpRoute(controller);
+export const adminPlansModule: ApiModuleDescriptor = {
+  name: "admin-plans",
+  mountPath: "/api/v1/admin",
+  router: route.router,
+};

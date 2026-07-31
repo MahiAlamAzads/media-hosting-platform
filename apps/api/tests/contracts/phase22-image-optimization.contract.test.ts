@@ -17,7 +17,7 @@ describe("Phase 22 automatic image optimization contracts", () => {
   it("starts and stops the durable sweep scheduler", () => {
     const server = source("src/server.ts");
     const scheduler = source(
-      "src/modules/processing/image-optimization-scheduler.ts"
+      "src/modules/processing/image-optimization-scheduler.ts",
     );
     expect(server).toContain("startImageOptimizationScheduler");
     expect(server).toContain("stopImageOptimizationScheduler");
@@ -49,11 +49,10 @@ describe("Phase 22 automatic image optimization contracts", () => {
     const openapi = JSON.parse(source("src/openapi/openapi.json"));
     expect(env).toContain("IMAGE_OPTIMIZATION_ENABLED");
     expect(env).toContain("IMAGE_PREVIEW_MAX_SIZE");
-    expect(
-      openapi.components.schemas.UploadCompleteResponse
-    ).toBeDefined();
-    const data = openapi.components.schemas.UploadCompleteResponse
-      .properties.data.allOf[1];
+    expect(openapi.components.schemas.UploadCompleteResponse).toBeDefined();
+    const data =
+      openapi.components.schemas.UploadCompleteResponse.properties.data
+        .allOf[1];
     expect(data.properties.optimization).toBeDefined();
   });
 });

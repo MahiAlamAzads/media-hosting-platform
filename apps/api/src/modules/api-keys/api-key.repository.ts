@@ -1,7 +1,7 @@
 import { prisma } from "@media/database";
 import {
   assertCountAllowedInTransaction,
-  lockWorkspaceQuota
+  lockWorkspaceQuota,
 } from "../billing/quota.service.js";
 import { recordUsageInTransaction } from "../billing/usage.service.js";
 
@@ -19,8 +19,8 @@ export class ApiKeyRepository {
         lastUsedAt: true,
         lastUsedIp: true,
         revokedAt: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
   }
 
@@ -34,24 +34,21 @@ export class ApiKeyRepository {
     scopes: string[];
     expiresAt: Date | null;
   }) {
-    return prisma.$transaction(async tx => {
+    return prisma.$transaction(async (tx) => {
       await lockWorkspaceQuota(tx, input.workspaceId);
 
       const activeKeys = await tx.apiKey.count({
         where: {
           workspaceId: input.workspaceId,
           revokedAt: null,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } }
-          ]
-        }
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
       });
 
       await assertCountAllowedInTransaction(tx, {
         workspaceId: input.workspaceId,
         metric: "API_KEYS",
-        current: BigInt(activeKeys)
+        current: BigInt(activeKeys),
       });
 
       const created = await tx.apiKey.create({ data: input });
@@ -62,7 +59,7 @@ export class ApiKeyRepository {
         quantity: 1n,
         idempotencyKey: `api-key:${created.id}:created`,
         sourceType: "API_KEY",
-        sourceId: created.id
+        sourceId: created.id,
       });
 
       return created;
@@ -70,21 +67,21 @@ export class ApiKeyRepository {
   }
 
   revoke(workspaceId: string, apiKeyId: string) {
-    return prisma.$transaction(async tx => {
+    return prisma.$transaction(async (tx) => {
       const record = await tx.apiKey.findFirst({
         where: {
           id: apiKeyId,
           workspaceId,
-          revokedAt: null
+          revokedAt: null,
         },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (!record) return { count: 0 };
 
       await tx.apiKey.update({
         where: { id: record.id },
-        data: { revokedAt: new Date() }
+        data: { revokedAt: new Date() },
       });
 
       await recordUsageInTransaction(tx, {
@@ -93,7 +90,7 @@ export class ApiKeyRepository {
         quantity: -1n,
         idempotencyKey: `api-key:${record.id}:revoked`,
         sourceType: "API_KEY",
-        sourceId: record.id
+        sourceId: record.id,
       });
 
       return { count: 1 };

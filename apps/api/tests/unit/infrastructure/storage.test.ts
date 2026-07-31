@@ -5,11 +5,11 @@ import { resolveStorageKey } from "../../../src/infrastructure/storage.js";
 describe("resolveStorageKey", () => {
   it("accepts a tenant-relative storage key", () => {
     const resolved = resolveStorageKey(
-      "tenants/workspace-1/originals/asset-1/file.mp4"
+      "tenants/workspace-1/originals/asset-1/file.mp4",
     );
 
     expect(resolved).toContain(
-      "tenants/workspace-1/originals/asset-1/file.mp4"
+      "tenants/workspace-1/originals/asset-1/file.mp4",
     );
   });
 
@@ -17,8 +17,8 @@ describe("resolveStorageKey", () => {
     "../../etc/passwd",
     "../outside",
     "/etc/passwd",
-    "tenants\\workspace-1\\file.mp4"
-  ])("rejects unsafe storage key %s", storageKey => {
+    "tenants\\workspace-1\\file.mp4",
+  ])("rejects unsafe storage key %s", (storageKey) => {
     expect(() => resolveStorageKey(storageKey)).toThrow(AppError);
   });
 });

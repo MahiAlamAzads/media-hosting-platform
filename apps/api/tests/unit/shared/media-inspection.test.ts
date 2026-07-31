@@ -2,46 +2,40 @@ import { describe, expect, it, vi } from "vitest";
 import * as storage from "../../../src/infrastructure/storage.js";
 import {
   declaredTypeMatchesDetectedType,
-  inspectStoredMedia
+  inspectStoredMedia,
 } from "../../../src/shared/media-inspection.js";
 
 describe("inspectStoredMedia", () => {
   it("detects JPEG", async () => {
     vi.spyOn(storage, "readStoragePrefix").mockResolvedValue(
-      Buffer.from([0xff, 0xd8, 0xff, 0xe0])
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
     );
 
-    await expect(
-      inspectStoredMedia("test.jpg")
-    ).resolves.toEqual({
+    await expect(inspectStoredMedia("test.jpg")).resolves.toEqual({
       contentType: "image/jpeg",
-      mediaType: "IMAGE"
+      mediaType: "IMAGE",
     });
   });
 
   it("detects PDF", async () => {
     vi.spyOn(storage, "readStoragePrefix").mockResolvedValue(
-      Buffer.from("%PDF-1.7")
+      Buffer.from("%PDF-1.7"),
     );
 
-    await expect(
-      inspectStoredMedia("test.pdf")
-    ).resolves.toEqual({
+    await expect(inspectStoredMedia("test.pdf")).resolves.toEqual({
       contentType: "application/pdf",
-      mediaType: "DOCUMENT"
+      mediaType: "DOCUMENT",
     });
   });
 
   it("falls back to binary", async () => {
     vi.spyOn(storage, "readStoragePrefix").mockResolvedValue(
-      Buffer.from([0x00, 0x01, 0x02])
+      Buffer.from([0x00, 0x01, 0x02]),
     );
 
-    await expect(
-      inspectStoredMedia("unknown.bin")
-    ).resolves.toEqual({
+    await expect(inspectStoredMedia("unknown.bin")).resolves.toEqual({
       contentType: "application/octet-stream",
-      mediaType: "OTHER"
+      mediaType: "OTHER",
     });
   });
 });
@@ -51,8 +45,8 @@ describe("declaredTypeMatchesDetectedType", () => {
     expect(
       declaredTypeMatchesDetectedType("image/png", {
         contentType: "image/jpeg",
-        mediaType: "IMAGE"
-      })
+        mediaType: "IMAGE",
+      }),
     ).toBe(true);
   });
 
@@ -60,8 +54,8 @@ describe("declaredTypeMatchesDetectedType", () => {
     expect(
       declaredTypeMatchesDetectedType("image/png", {
         contentType: "application/pdf",
-        mediaType: "DOCUMENT"
-      })
+        mediaType: "DOCUMENT",
+      }),
     ).toBe(false);
   });
 });

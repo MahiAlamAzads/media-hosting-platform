@@ -1,14 +1,11 @@
 export function normalizeResourceName(name: string): string {
-  return name
-    .normalize("NFKC")
-    .trim()
-    .replace(/\s+/g, " ");
+  return name.normalize("NFKC").trim().replace(/\s+/g, " ");
 }
 
 export function replacePathPrefix(
   pathKey: string,
   oldPrefix: string,
-  newPrefix: string
+  newPrefix: string,
 ): string {
   if (pathKey === oldPrefix) return newPrefix;
 

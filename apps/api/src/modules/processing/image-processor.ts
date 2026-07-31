@@ -5,14 +5,14 @@ import { env } from "../../config/env.js";
 import {
   overwriteStorageFile,
   readStorageFile,
-  removeStorageFile
+  removeStorageFile,
 } from "../../infrastructure/storage.js";
 import { AppError } from "../../shared/http.js";
 import {
   assertCountAllowedInTransaction,
   assertMeteredUsageAllowed,
   assertStorageDeltaAllowedInTransaction,
-  lockWorkspaceQuota
+  lockWorkspaceQuota,
 } from "../billing/quota.service.js";
 import { recordUsageInTransaction } from "../billing/usage.service.js";
 import { scheduleUsageAlertEvaluation } from "../billing/usage-alert.service.js";
@@ -47,13 +47,13 @@ export function imageVariantSpecs(): VariantSpec[] {
     {
       kind: "THUMBNAIL",
       maxSize: env.IMAGE_THUMBNAIL_MAX_SIZE,
-      quality: env.IMAGE_THUMBNAIL_QUALITY
+      quality: env.IMAGE_THUMBNAIL_QUALITY,
     },
     {
       kind: "PREVIEW",
       maxSize: env.IMAGE_PREVIEW_MAX_SIZE,
-      quality: env.IMAGE_PREVIEW_QUALITY
-    }
+      quality: env.IMAGE_PREVIEW_QUALITY,
+    },
   ];
 }
 
@@ -64,8 +64,8 @@ function orientedDimensions(metadata: {
 }): { width: number | null; height: number | null } {
   const rotated = [5, 6, 7, 8].includes(metadata.orientation ?? 1);
   return {
-    width: rotated ? metadata.height ?? null : metadata.width ?? null,
-    height: rotated ? metadata.width ?? null : metadata.height ?? null
+    width: rotated ? (metadata.height ?? null) : (metadata.width ?? null),
+    height: rotated ? (metadata.width ?? null) : (metadata.height ?? null),
   };
 }
 
@@ -73,40 +73,36 @@ type SharpPipeline = ReturnType<typeof sharp>;
 
 function encodeVariant(
   pipeline: SharpPipeline,
-  quality: number
+  quality: number,
 ): SharpPipeline {
   return env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT === "avif"
     ? pipeline.avif({
         quality,
-        effort: env.IMAGE_OPTIMIZATION_EFFORT
+        effort: env.IMAGE_OPTIMIZATION_EFFORT,
       })
     : pipeline.webp({
         quality,
         effort: env.IMAGE_OPTIMIZATION_EFFORT,
-        smartSubsample: true
+        smartSubsample: true,
       });
 }
 
 export class ImageProcessor {
   async process(
     assetId: string,
-    options: ImageProcessingOptions = {}
+    options: ImageProcessingOptions = {},
   ): Promise<ImageProcessingResult> {
     const asset = await prisma.mediaAsset.findUnique({
       where: { id: assetId },
-      include: { variants: true }
+      include: { variants: true },
     });
 
-    if (
-      !asset ||
-      asset.deletedAt ||
-      asset.detectedMediaType !== "IMAGE"
-    ) {
+    if (!asset || asset.deletedAt || asset.detectedMediaType !== "IMAGE") {
       return {
         assetId,
         generated: [],
         skipped: [],
-        outputFormat: env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT
+        outputFormat: env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT,
       };
     }
 
@@ -114,34 +110,35 @@ export class ImageProcessor {
       throw new AppError(
         409,
         "MEDIA_NOT_READY",
-        "The image is not ready for processing."
+        "The image is not ready for processing.",
       );
     }
 
     const specs = imageVariantSpecs();
-    const existingByKind = new Map<
-      "THUMBNAIL" | "PREVIEW",
-      ExistingVariant
-    >(
-      asset.variants.map((variant: ExistingVariant): [
-        "THUMBNAIL" | "PREVIEW",
-        ExistingVariant
-      ] => [variant.kind, variant])
+    const existingByKind = new Map<"THUMBNAIL" | "PREVIEW", ExistingVariant>(
+      asset.variants.map(
+        (
+          variant: ExistingVariant,
+        ): ["THUMBNAIL" | "PREVIEW", ExistingVariant] => [
+          variant.kind,
+          variant,
+        ],
+      ),
     );
-    const requestedSpecs = specs.filter(spec => {
+    const requestedSpecs = specs.filter((spec) => {
       if (options.force) return true;
       return existingByKind.get(spec.kind)?.status !== "READY";
     });
     const skipped = specs
-      .filter(spec => !requestedSpecs.includes(spec))
-      .map(spec => spec.kind);
+      .filter((spec) => !requestedSpecs.includes(spec))
+      .map((spec) => spec.kind);
 
     if (requestedSpecs.length === 0) {
       return {
         assetId: asset.id,
         generated: [],
         skipped,
-        outputFormat: env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT
+        outputFormat: env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT,
       };
     }
 
@@ -152,7 +149,7 @@ export class ImageProcessor {
         asset.workspaceId,
         "IMAGE_TRANSFORMATIONS",
         1n,
-        `variant:${jobId}:${spec.kind}:transform`
+        `variant:${jobId}:${spec.kind}:transform`,
       );
     }
 
@@ -160,7 +157,7 @@ export class ImageProcessor {
       asset.workspaceId,
       "PROCESSING_CPU_MILLISECONDS",
       BigInt(env.PAYG_PROCESSING_AUTHORIZATION_MILLISECONDS),
-      `processing:${jobId}:cpu`
+      `processing:${jobId}:cpu`,
     );
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -170,22 +167,22 @@ export class ImageProcessor {
         tx.uploadSession.count({
           where: {
             workspaceId: asset.workspaceId,
-            status: { in: ["ACTIVE", "COMPLETING"] }
-          }
+            status: { in: ["ACTIVE", "COMPLETING"] },
+          },
         }),
         tx.mediaAsset.count({
           where: {
             workspaceId: asset.workspaceId,
             status: "PROCESSING",
-            deletedAt: null
-          }
-        })
+            deletedAt: null,
+          },
+        }),
       ]);
 
       await assertCountAllowedInTransaction(tx, {
         workspaceId: asset.workspaceId,
         metric: "CONCURRENT_JOBS",
-        current: BigInt(activeUploads + processingAssets)
+        current: BigInt(activeUploads + processingAssets),
       });
 
       const claimed = await tx.mediaAsset.updateMany({
@@ -193,16 +190,16 @@ export class ImageProcessor {
           id: asset.id,
           workspaceId: asset.workspaceId,
           status: "READY",
-          deletedAt: null
+          deletedAt: null,
         },
-        data: { status: "PROCESSING" }
+        data: { status: "PROCESSING" },
       });
 
       if (claimed.count !== 1) {
         throw new AppError(
           409,
           "MEDIA_PROCESSING_CONFLICT",
-          "The image is already being processed."
+          "The image is already being processed.",
         );
       }
     });
@@ -214,17 +211,17 @@ export class ImageProcessor {
       const input = await readStorageFile(asset.storageKey);
       const metadata = await sharp(input, {
         failOn: "error",
-        limitInputPixels: env.IMAGE_OPTIMIZATION_MAX_INPUT_PIXELS
+        limitInputPixels: env.IMAGE_OPTIMIZATION_MAX_INPUT_PIXELS,
       }).metadata();
       const dimensions = orientedDimensions(metadata);
       const basePipeline = sharp(input, {
         failOn: "error",
-        limitInputPixels: env.IMAGE_OPTIMIZATION_MAX_INPUT_PIXELS
+        limitInputPixels: env.IMAGE_OPTIMIZATION_MAX_INPUT_PIXELS,
       }).rotate();
 
       await prisma.mediaAsset.update({
         where: { id: asset.id },
-        data: dimensions
+        data: dimensions,
       });
 
       for (const spec of requestedSpecs) {
@@ -234,11 +231,11 @@ export class ImageProcessor {
           height: spec.maxSize,
           fit: "inside",
           withoutEnlargement: true,
-          fastShrinkOnLoad: true
+          fastShrinkOnLoad: true,
         });
         const output = await encodeVariant(
           outputPipeline,
-          spec.quality
+          spec.quality,
         ).toBuffer({ resolveWithObject: true });
 
         const sizeBytes = BigInt(output.data.length);
@@ -256,16 +253,15 @@ export class ImageProcessor {
             await assertStorageDeltaAllowedInTransaction(tx, {
               workspaceId: asset.workspaceId,
               deltaBytes,
-              operationKey:
-                `variant:${jobId}:${spec.kind}:storage`
+              operationKey: `variant:${jobId}:${spec.kind}:storage`,
             });
 
             const variant = await tx.mediaVariant.upsert({
               where: {
                 mediaAssetId_kind: {
                   mediaAssetId: asset.id,
-                  kind: spec.kind
-                }
+                  kind: spec.kind,
+                },
               },
               update: {
                 status: "READY",
@@ -275,7 +271,7 @@ export class ImageProcessor {
                 width: output.info.width,
                 height: output.info.height,
                 quality: spec.quality,
-                sizeBytes
+                sizeBytes,
               },
               create: {
                 mediaAssetId: asset.id,
@@ -286,8 +282,8 @@ export class ImageProcessor {
                 quality: spec.quality,
                 storageKey,
                 sizeBytes,
-                status: "READY"
-              }
+                status: "READY",
+              },
             });
 
             if (deltaBytes !== 0n) {
@@ -304,13 +300,11 @@ export class ImageProcessor {
                 workspaceId: asset.workspaceId,
                 metric: "STORAGE_BYTES",
                 quantity: deltaBytes,
-                idempotencyKey:
-                  `variant:${jobId}:${spec.kind}:storage`,
-                paygOperationKey:
-                  `variant:${jobId}:${spec.kind}:storage`,
+                idempotencyKey: `variant:${jobId}:${spec.kind}:storage`,
+                paygOperationKey: `variant:${jobId}:${spec.kind}:storage`,
                 sourceType: "MEDIA_VARIANT",
                 sourceId: variant.id,
-                metadata: { assetId: asset.id }
+                metadata: { assetId: asset.id },
               });
             }
 
@@ -318,10 +312,8 @@ export class ImageProcessor {
               workspaceId: asset.workspaceId,
               metric: "IMAGE_TRANSFORMATIONS",
               quantity: 1n,
-              idempotencyKey:
-                `variant:${jobId}:${spec.kind}:transform`,
-              paygOperationKey:
-                `variant:${jobId}:${spec.kind}:transform`,
+              idempotencyKey: `variant:${jobId}:${spec.kind}:transform`,
+              paygOperationKey: `variant:${jobId}:${spec.kind}:transform`,
               sourceType: "MEDIA_VARIANT",
               sourceId: variant.id,
               metadata: {
@@ -330,8 +322,8 @@ export class ImageProcessor {
                 height: output.info.height,
                 format: extension,
                 automatic: !options.force,
-                metadataStripped: true
-              }
+                metadataStripped: true,
+              },
             });
           });
         } catch (error) {
@@ -339,15 +331,9 @@ export class ImageProcessor {
           throw error;
         }
 
-        if (
-          existing?.storageKey &&
-          existing.storageKey !== storageKey
-        ) {
-          await removeStorageFile(existing.storageKey).catch(error => {
-            console.error(
-              "Failed to remove replaced image variant:",
-              error
-            );
+        if (existing?.storageKey && existing.storageKey !== storageKey) {
+          await removeStorageFile(existing.storageKey).catch((error) => {
+            console.error("Failed to remove replaced image variant:", error);
           });
         }
 
@@ -360,7 +346,7 @@ export class ImageProcessor {
       await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.mediaAsset.update({
           where: { id: asset.id },
-          data: { status: "READY" }
+          data: { status: "READY" },
         });
 
         await recordUsageInTransaction(tx, {
@@ -373,8 +359,8 @@ export class ImageProcessor {
           sourceId: asset.id,
           metadata: {
             automatic: !options.force,
-            generated
-          }
+            generated,
+          },
         });
       });
 
@@ -385,16 +371,18 @@ export class ImageProcessor {
         assetId: asset.id,
         generated,
         skipped,
-        outputFormat: env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT
+        outputFormat: env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT,
       };
     } catch (error) {
-      await prisma.mediaAsset.updateMany({
-        where: {
-          id: asset.id,
-          status: "PROCESSING"
-        },
-        data: { status: "READY" }
-      }).catch(() => undefined);
+      await prisma.mediaAsset
+        .updateMany({
+          where: {
+            id: asset.id,
+            status: "PROCESSING",
+          },
+          data: { status: "READY" },
+        })
+        .catch(() => undefined);
 
       throw error;
     }

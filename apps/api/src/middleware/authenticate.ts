@@ -40,15 +40,22 @@ function requiredScopeForRequest(req: Request): string | null {
   return null;
 }
 
-async function authenticateApiKey(rawKey: string, req: Request): Promise<boolean> {
+async function authenticateApiKey(
+  rawKey: string,
+  req: Request,
+): Promise<boolean> {
   const parsed = parseApiKey(rawKey);
   if (!parsed) return false;
 
   const record = await prisma.apiKey.findUnique({
-    where: { keyId: parsed.keyId }
+    where: { keyId: parsed.keyId },
   });
 
-  if (!record || record.revokedAt || (record.expiresAt && record.expiresAt <= new Date())) {
+  if (
+    !record ||
+    record.revokedAt ||
+    (record.expiresAt && record.expiresAt <= new Date())
+  ) {
     return false;
   }
 
@@ -61,15 +68,19 @@ async function authenticateApiKey(rawKey: string, req: Request): Promise<boolean
       workspaceId: record.workspaceId,
       userId: record.createdById,
       workspace: { status: "ACTIVE" },
-      user: { status: "ACTIVE", emailVerifiedAt: { not: null } }
-    }
+      user: { status: "ACTIVE", emailVerifiedAt: { not: null } },
+    },
   });
 
   if (!membership) return false;
 
   const requiredScope = requiredScopeForRequest(req);
   if (requiredScope && !record.scopes.includes(requiredScope)) {
-    throw new AppError(403, "INSUFFICIENT_SCOPE", `Required API scope: ${requiredScope}`);
+    throw new AppError(
+      403,
+      "INSUFFICIENT_SCOPE",
+      `Required API scope: ${requiredScope}`,
+    );
   }
 
   req.auth = {
@@ -78,28 +89,33 @@ async function authenticateApiKey(rawKey: string, req: Request): Promise<boolean
     workspaceId: record.workspaceId,
     apiKeyId: record.id,
     role: membership.role,
-    scopes: record.scopes
+    scopes: record.scopes,
   };
 
   void shouldRunThrottled(
     "api-key-touch",
     record.id,
-    env.REDIS_AUTH_TOUCH_TTL_SECONDS
-  ).then(shouldTouch => {
-    if (!shouldTouch) return;
-    return prisma.apiKey.update({
-      where: { id: record.id },
-      data: { lastUsedAt: new Date(), lastUsedIp: req.ip }
-    });
-  }).catch(() => undefined);
+    env.REDIS_AUTH_TOUCH_TTL_SECONDS,
+  )
+    .then((shouldTouch) => {
+      if (!shouldTouch) return;
+      return prisma.apiKey.update({
+        where: { id: record.id },
+        data: { lastUsedAt: new Date(), lastUsedIp: req.ip },
+      });
+    })
+    .catch(() => undefined);
 
   return true;
 }
 
-async function authenticateUserToken(token: string, req: Request): Promise<void> {
+async function authenticateUserToken(
+  token: string,
+  req: Request,
+): Promise<void> {
   const claims = jwt.verify(token, env.ACCESS_TOKEN_SECRET, {
     issuer: "media-platform",
-    audience: "media-platform-api"
+    audience: "media-platform-api",
   }) as AccessClaims;
 
   if (
@@ -116,11 +132,11 @@ async function authenticateUserToken(token: string, req: Request): Promise<void>
       id: claims.sessionId,
       userId: claims.sub,
       revokedAt: null,
-      expiresAt: { gt: new Date() }
+      expiresAt: { gt: new Date() },
     },
     include: {
-      user: true
-    }
+      user: true,
+    },
   });
 
   if (
@@ -136,8 +152,8 @@ async function authenticateUserToken(token: string, req: Request): Promise<void>
     where: {
       userId: claims.sub,
       workspaceId: claims.workspaceId,
-      workspace: { status: "ACTIVE" }
-    }
+      workspace: { status: "ACTIVE" },
+    },
   });
 
   if (!membership) throw new Error("Workspace access no longer valid");
@@ -148,26 +164,28 @@ async function authenticateUserToken(token: string, req: Request): Promise<void>
     workspaceId: claims.workspaceId,
     sessionId: session.id,
     role: membership.role,
-    scopes: ["*"]
+    scopes: ["*"],
   };
 
   void shouldRunThrottled(
     "session-touch",
     session.id,
-    env.REDIS_AUTH_TOUCH_TTL_SECONDS
-  ).then(shouldTouch => {
-    if (!shouldTouch) return;
-    return prisma.session.update({
-      where: { id: session.id },
-      data: { lastUsedAt: new Date() }
-    });
-  }).catch(() => undefined);
+    env.REDIS_AUTH_TOUCH_TTL_SECONDS,
+  )
+    .then((shouldTouch) => {
+      if (!shouldTouch) return;
+      return prisma.session.update({
+        where: { id: session.id },
+        data: { lastUsedAt: new Date() },
+      });
+    })
+    .catch(() => undefined);
 }
 
 export async function authenticate(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const authorization = req.get("authorization");
 
@@ -181,7 +199,11 @@ export async function authenticate(
   try {
     if (token.startsWith("mh_live_")) {
       if (!(await authenticateApiKey(token, req))) {
-        throw new AppError(401, "INVALID_API_KEY", "API key is invalid or expired.");
+        throw new AppError(
+          401,
+          "INVALID_API_KEY",
+          "API key is invalid or expired.",
+        );
       }
     } else {
       await authenticateUserToken(token, req);
@@ -200,7 +222,7 @@ export async function authenticate(
         req.auth.workspaceId,
         "API_REQUESTS",
         1n,
-        `api:${req.id}`
+        `api:${req.id}`,
       );
     }
 
@@ -209,14 +231,28 @@ export async function authenticate(
     next(
       error instanceof AppError
         ? error
-        : new AppError(401, "INVALID_ACCESS_TOKEN", "Access token is invalid, expired or revoked.")
+        : new AppError(
+            401,
+            "INVALID_ACCESS_TOKEN",
+            "Access token is invalid, expired or revoked.",
+          ),
     );
   }
 }
 
-export function requireUser(req: Request, _res: Response, next: NextFunction): void {
+export function requireUser(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
   if (req.auth?.principalType !== "USER") {
-    next(new AppError(403, "USER_SESSION_REQUIRED", "A signed-in user session is required."));
+    next(
+      new AppError(
+        403,
+        "USER_SESSION_REQUIRED",
+        "A signed-in user session is required.",
+      ),
+    );
     return;
   }
   next();
@@ -226,7 +262,9 @@ export function requireScope(scope: string) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const scopes = req.auth?.scopes ?? [];
     if (!scopes.includes("*") && !scopes.includes(scope)) {
-      next(new AppError(403, "INSUFFICIENT_SCOPE", `Required API scope: ${scope}`));
+      next(
+        new AppError(403, "INSUFFICIENT_SCOPE", `Required API scope: ${scope}`),
+      );
       return;
     }
     next();

@@ -10,5 +10,7 @@ export function hashOneTimeToken(token: string): string {
 }
 
 export function hashRefreshToken(token: string): string {
-  return createHmac("sha256", env.REFRESH_TOKEN_PEPPER).update(token).digest("hex");
+  return createHmac("sha256", env.REFRESH_TOKEN_PEPPER)
+    .update(token)
+    .digest("hex");
 }

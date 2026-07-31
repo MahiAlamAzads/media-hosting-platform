@@ -9,8 +9,8 @@ async function main(): Promise<void> {
       `Workspaces evaluated: ${result.workspaces}`,
       `Alerts created: ${result.created}`,
       `Emails sent: ${result.emailed}`,
-      `Email failures: ${result.failed}`
-    ].join("\n")
+      `Email failures: ${result.failed}`,
+    ].join("\n"),
   );
 }
 

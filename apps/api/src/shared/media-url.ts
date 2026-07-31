@@ -16,26 +16,21 @@ function publicBaseUrl(): string {
 
 export function publicMediaPath(
   assetId: string,
-  variant?: MediaVariantKind
+  variant?: MediaVariantKind,
 ): string {
-  const suffix = variant
-    ? `?variant=${encodeURIComponent(variant)}`
-    : "";
+  const suffix = variant ? `?variant=${encodeURIComponent(variant)}` : "";
 
   return `/i/${encodeURIComponent(assetId)}${suffix}`;
 }
 
 export function publicMediaUrl(
   assetId: string,
-  variant?: MediaVariantKind
+  variant?: MediaVariantKind,
 ): string {
   return `${publicBaseUrl()}${publicMediaPath(assetId, variant)}`;
 }
 
-export function buildMediaUrlsForBase(
-  baseUrl: string,
-  input: MediaUrlInput
-) {
+export function buildMediaUrlsForBase(baseUrl: string, input: MediaUrlInput) {
   const isPublicReady =
     input.visibility === "PUBLIC" && input.status === "READY";
   const isImage = input.detectedMediaType === "IMAGE";
@@ -51,9 +46,7 @@ export function buildMediaUrlsForBase(
 
   return {
     isPublic: isPublicReady,
-    cdnPath: isPublicReady
-      ? publicMediaPath(input.assetId)
-      : null,
+    cdnPath: isPublicReady ? publicMediaPath(input.assetId) : null,
     fileUrl,
     imgUrl: isImage ? optimizedImageUrl : null,
     thumbnailUrl:
@@ -63,7 +56,7 @@ export function buildMediaUrlsForBase(
     previewUrl:
       isPublicReady && isImage && readyVariants.has("PREVIEW")
         ? absoluteUrl("PREVIEW")
-        : null
+        : null,
   };
 }
 

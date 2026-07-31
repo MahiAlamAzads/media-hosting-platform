@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as deliveryToken from "../../../../src/shared/delivery-token.js";
 import type { DeliveryRepository } from "../../../../src/modules/delivery/delivery.repository.js";
-import { DeliveryService, type DeliveryStorage } from "../../../../src/modules/delivery/delivery.service.js";
+import {
+  DeliveryService,
+  type DeliveryStorage,
+} from "../../../../src/modules/delivery/delivery.service.js";
 
 describe("DeliveryService", () => {
   const repository: DeliveryRepository = {
-    findReadyAsset: vi.fn()
+    findReadyAsset: vi.fn(),
   };
 
   const storage: DeliveryStorage = {
-    fileSize: vi.fn()
+    fileSize: vi.fn(),
   };
 
   const service = new DeliveryService(repository, storage);
@@ -20,7 +23,7 @@ describe("DeliveryService", () => {
       workspaceId: "workspace-1",
       assetId: "asset-1",
       disposition: "inline",
-      type: "media-delivery"
+      type: "media-delivery",
     });
   });
 
@@ -31,18 +34,18 @@ describe("DeliveryService", () => {
       originalFilename: "video.mp4",
       storageKey: "tenants/workspace-1/video.mp4",
       contentType: "video/mp4",
-      detectedContentType: "video/mp4"
+      detectedContentType: "video/mp4",
     });
 
     vi.mocked(storage.fileSize).mockResolvedValue(1000n);
 
     await expect(
-      service.authorizeDelivery({ token: "valid-token" })
+      service.authorizeDelivery({ token: "valid-token" }),
     ).resolves.toMatchObject({
       fileSize: 1000,
       statusCode: 200,
       contentLength: 1000,
-      range: null
+      range: null,
     });
   });
 
@@ -53,7 +56,7 @@ describe("DeliveryService", () => {
       originalFilename: "video.mp4",
       storageKey: "tenants/workspace-1/video.mp4",
       contentType: "video/mp4",
-      detectedContentType: "video/mp4"
+      detectedContentType: "video/mp4",
     });
 
     vi.mocked(storage.fileSize).mockResolvedValue(1000n);
@@ -61,12 +64,12 @@ describe("DeliveryService", () => {
     await expect(
       service.authorizeDelivery({
         token: "valid-token",
-        rangeHeader: "bytes=100-199"
-      })
+        rangeHeader: "bytes=100-199",
+      }),
     ).resolves.toMatchObject({
       statusCode: 206,
       contentLength: 100,
-      contentRange: "bytes 100-199/1000"
+      contentRange: "bytes 100-199/1000",
     });
   });
 
@@ -76,10 +79,10 @@ describe("DeliveryService", () => {
     });
 
     await expect(
-      service.authorizeDelivery({ token: "invalid-token" })
+      service.authorizeDelivery({ token: "invalid-token" }),
     ).rejects.toMatchObject({
       statusCode: 401,
-      code: "INVALID_DELIVERY_TOKEN"
+      code: "INVALID_DELIVERY_TOKEN",
     });
   });
 
@@ -87,10 +90,10 @@ describe("DeliveryService", () => {
     vi.mocked(repository.findReadyAsset).mockResolvedValue(null);
 
     await expect(
-      service.authorizeDelivery({ token: "valid-token" })
+      service.authorizeDelivery({ token: "valid-token" }),
     ).rejects.toMatchObject({
       statusCode: 404,
-      code: "MEDIA_NOT_FOUND"
+      code: "MEDIA_NOT_FOUND",
     });
   });
 
@@ -101,7 +104,7 @@ describe("DeliveryService", () => {
       originalFilename: "video.mp4",
       storageKey: "tenants/workspace-1/video.mp4",
       contentType: "video/mp4",
-      detectedContentType: "video/mp4"
+      detectedContentType: "video/mp4",
     });
 
     vi.mocked(storage.fileSize).mockResolvedValue(1000n);
@@ -109,11 +112,11 @@ describe("DeliveryService", () => {
     await expect(
       service.authorizeDelivery({
         token: "valid-token",
-        rangeHeader: "bytes=2000-3000"
-      })
+        rangeHeader: "bytes=2000-3000",
+      }),
     ).rejects.toMatchObject({
       statusCode: 416,
-      code: "INVALID_RANGE"
+      code: "INVALID_RANGE",
     });
   });
 });

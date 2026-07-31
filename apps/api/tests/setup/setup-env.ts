@@ -8,7 +8,7 @@ const workspaceRoot = path.resolve(currentDirectory, "../../../..");
 dotenv.config({
   path: path.join(workspaceRoot, ".env"),
   override: false,
-  quiet: true
+  quiet: true,
 });
 
 process.env.NODE_ENV = "test";

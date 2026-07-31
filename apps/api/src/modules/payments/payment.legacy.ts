@@ -2,22 +2,19 @@ import express, { Router } from "express";
 import { z } from "zod";
 import { prisma, Prisma } from "@media/database";
 import { env } from "../../config/env.js";
-import {
-  authenticate,
-  requireUser
-} from "../../middleware/authenticate.js";
+import { authenticate, requireUser } from "../../middleware/authenticate.js";
 import {
   overwriteStorageFile,
-  removeStorageFile
+  removeStorageFile,
 } from "../../infrastructure/storage.js";
 import { AppError, asyncHandler } from "../../shared/http.js";
 import {
   assertInvoicePayable,
-  getInvoiceForWorkspace
+  getInvoiceForWorkspace,
 } from "./payment.service.js";
 import {
   createGatewayTransactionId,
-  isValidPaymentProof
+  isValidPaymentProof,
 } from "./payment.utils.js";
 import { initiateSslcommerz } from "./sslcommerz.service.js";
 
@@ -32,7 +29,7 @@ const manualChannels = [
   "ROCKET",
   "WISE",
   "PAYONEER",
-  "OTHER"
+  "OTHER",
 ] as const;
 
 function requireBillingManager(role: "OWNER" | "ADMIN" | "MEMBER"): void {
@@ -40,7 +37,7 @@ function requireBillingManager(role: "OWNER" | "ADMIN" | "MEMBER"): void {
     throw new AppError(
       403,
       "BILLING_PERMISSION_REQUIRED",
-      "Workspace owner or admin access is required."
+      "Workspace owner or admin access is required.",
     );
   }
 }
@@ -67,12 +64,12 @@ function serializeManualAccount(account: {
     bankName: account.bankName,
     branchName: account.branchName,
     routingNumber: account.routingNumber,
-    instructions: account.instructions
+    instructions: account.instructions,
   };
 }
 
 function serializeInvoice(
-  invoice: Awaited<ReturnType<typeof getInvoiceForWorkspace>>
+  invoice: Awaited<ReturnType<typeof getInvoiceForWorkspace>>,
 ) {
   return {
     id: invoice.id,
@@ -96,10 +93,10 @@ function serializeInvoice(
         id: invoice.planVersion.plan.id,
         code: invoice.planVersion.plan.code,
         name: invoice.planVersion.plan.name,
-        description: invoice.planVersion.plan.description
-      }
+        description: invoice.planVersion.plan.description,
+      },
     },
-    payments: invoice.payments.map(payment => ({
+    payments: invoice.payments.map((payment) => ({
       id: payment.id,
       method: payment.method,
       status: payment.status,
@@ -116,29 +113,22 @@ function serializeInvoice(
       manualSubmission: payment.manualSubmission
         ? {
             id: payment.manualSubmission.id,
-            transactionReference:
-              payment.manualSubmission.transactionReference,
+            transactionReference: payment.manualSubmission.transactionReference,
             senderAccount: payment.manualSubmission.senderAccount,
             senderName: payment.manualSubmission.senderName,
             paidAt: payment.manualSubmission.paidAt,
             note: payment.manualSubmission.note,
             proofFilename: payment.manualSubmission.proofFilename,
-            proofContentType:
-              payment.manualSubmission.proofContentType,
+            proofContentType: payment.manualSubmission.proofContentType,
             proofSizeBytes:
               payment.manualSubmission.proofSizeBytes?.toString() ?? null,
-            hasProof: Boolean(
-              payment.manualSubmission.proofStorageKey
-            ),
+            hasProof: Boolean(payment.manualSubmission.proofStorageKey),
             reviewedAt: payment.manualSubmission.reviewedAt,
-            rejectionReason:
-              payment.manualSubmission.rejectionReason,
-            account: serializeManualAccount(
-              payment.manualSubmission.account
-            )
+            rejectionReason: payment.manualSubmission.rejectionReason,
+            account: serializeManualAccount(payment.manualSubmission.account),
           }
-        : null
-    }))
+        : null,
+    })),
   };
 }
 
@@ -152,10 +142,10 @@ router.get(
         manualProofMaxBytes: env.MANUAL_PAYMENT_PROOF_MAX_BYTES,
         sslcommerzEnabled: env.SSLCOMMERZ_ENABLED,
         sslcommerzSandbox: env.SSLCOMMERZ_SANDBOX,
-        manualChannels
-      }
+        manualChannels,
+      },
     });
-  })
+  }),
 );
 
 router.get(
@@ -164,13 +154,13 @@ router.get(
     const currency = z.enum(["BDT", "USD"]).parse(req.query.currency);
     const accounts = await prisma.manualPaymentAccount.findMany({
       where: { currency, isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
     res.json({
       data: accounts.map(serializeManualAccount),
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.get(
@@ -185,13 +175,13 @@ router.get(
         payments: {
           orderBy: { createdAt: "desc" },
           take: 1,
-          select: { id: true, method: true, status: true, createdAt: true }
-        }
-      }
+          select: { id: true, method: true, status: true, createdAt: true },
+        },
+      },
     });
 
     res.json({
-      data: invoices.map(invoice => ({
+      data: invoices.map((invoice) => ({
         id: invoice.id,
         number: invoice.number,
         kind: invoice.kind,
@@ -213,19 +203,19 @@ router.get(
             id: invoice.planVersion.plan.id,
             code: invoice.planVersion.plan.code,
             name: invoice.planVersion.plan.name,
-            description: invoice.planVersion.plan.description
-          }
+            description: invoice.planVersion.plan.description,
+          },
         },
-        payments: invoice.payments.map(payment => ({
+        payments: invoice.payments.map((payment) => ({
           id: payment.id,
           method: payment.method,
           status: payment.status,
-          createdAt: payment.createdAt
-        }))
+          createdAt: payment.createdAt,
+        })),
       })),
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.get(
@@ -234,10 +224,10 @@ router.get(
     const invoiceId = invoiceIdSchema.parse(req.params.invoiceId);
     const invoice = await getInvoiceForWorkspace(
       invoiceId,
-      req.auth!.workspaceId
+      req.auth!.workspaceId,
     );
     res.json({ data: serializeInvoice(invoice), meta: { requestId: req.id } });
-  })
+  }),
 );
 
 router.post(
@@ -249,94 +239,102 @@ router.post(
       throw new AppError(
         503,
         "MANUAL_PAYMENT_DISABLED",
-        "Manual payment is currently disabled."
+        "Manual payment is currently disabled.",
       );
     }
 
     const invoiceId = invoiceIdSchema.parse(req.params.invoiceId);
-    const input = z.object({
-      accountId: z.string().min(1).max(100),
-      transactionReference: z.string().trim().min(3).max(120),
-      senderAccount: z.string().trim().max(120).nullable().optional(),
-      senderName: z.string().trim().max(120).nullable().optional(),
-      paidAt: z.coerce.date(),
-      note: z.string().trim().max(1000).nullable().optional()
-    }).parse(req.body);
+    const input = z
+      .object({
+        accountId: z.string().min(1).max(100),
+        transactionReference: z.string().trim().min(3).max(120),
+        senderAccount: z.string().trim().max(120).nullable().optional(),
+        senderName: z.string().trim().max(120).nullable().optional(),
+        paidAt: z.coerce.date(),
+        note: z.string().trim().max(1000).nullable().optional(),
+      })
+      .parse(req.body);
 
     if (input.paidAt > new Date(Date.now() + 5 * 60 * 1000)) {
       throw new AppError(
         422,
         "PAYMENT_DATE_INVALID",
-        "Payment date cannot be in the future."
+        "Payment date cannot be in the future.",
       );
     }
 
     const invoice = await assertInvoicePayable(
       invoiceId,
-      req.auth!.workspaceId
+      req.auth!.workspaceId,
     );
 
     const account = await prisma.manualPaymentAccount.findFirst({
       where: {
         id: input.accountId,
         currency: invoice.currency,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     if (!account) {
       throw new AppError(
         404,
         "PAYMENT_ACCOUNT_NOT_FOUND",
-        "Selected manual payment account is unavailable."
+        "Selected manual payment account is unavailable.",
       );
     }
 
-    const duplicateActive = invoice.payments.some(payment =>
-      new Set(["PENDING", "PROCESSING", "UNDER_REVIEW", "PAID"]).has(payment.status)
+    const duplicateActive = invoice.payments.some((payment) =>
+      new Set(["PENDING", "PROCESSING", "UNDER_REVIEW", "PAID"]).has(
+        payment.status,
+      ),
     );
 
     if (duplicateActive) {
       throw new AppError(
         409,
         "PAYMENT_ALREADY_IN_PROGRESS",
-        "This invoice already has an active payment attempt."
+        "This invoice already has an active payment attempt.",
       );
     }
 
-    const payment = await prisma.paymentAttempt.create({
-      data: {
-        invoiceId: invoice.id,
-        method: "MANUAL",
-        status: env.MANUAL_PAYMENT_PROOF_REQUIRED ? "PENDING" : "UNDER_REVIEW",
-        amountMinor: invoice.amountMinor,
-        currency: invoice.currency,
-        initiatedAt: new Date(),
-        manualSubmission: {
-          create: {
-            accountId: account.id,
-            transactionReference: input.transactionReference,
-            senderAccount: input.senderAccount,
-            senderName: input.senderName,
-            paidAt: input.paidAt,
-            note: input.note
-          }
+    const payment = await prisma.paymentAttempt
+      .create({
+        data: {
+          invoiceId: invoice.id,
+          method: "MANUAL",
+          status: env.MANUAL_PAYMENT_PROOF_REQUIRED
+            ? "PENDING"
+            : "UNDER_REVIEW",
+          amountMinor: invoice.amountMinor,
+          currency: invoice.currency,
+          initiatedAt: new Date(),
+          manualSubmission: {
+            create: {
+              accountId: account.id,
+              transactionReference: input.transactionReference,
+              senderAccount: input.senderAccount,
+              senderName: input.senderName,
+              paidAt: input.paidAt,
+              note: input.note,
+            },
+          },
+        },
+        include: { manualSubmission: true },
+      })
+      .catch((error) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          throw new AppError(
+            409,
+            "PAYMENT_REFERENCE_EXISTS",
+            "This transaction reference has already been submitted for the selected account.",
+          );
         }
-      },
-      include: { manualSubmission: true }
-    }).catch(error => {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        throw new AppError(
-          409,
-          "PAYMENT_REFERENCE_EXISTS",
-          "This transaction reference has already been submitted for the selected account."
-        );
-      }
-      throw error;
-    });
+        throw error;
+      });
 
     await prisma.auditLog.create({
       data: {
@@ -348,35 +346,35 @@ router.post(
         metadata: {
           invoiceId: invoice.id,
           invoiceNumber: invoice.number,
-          transactionReference: input.transactionReference
+          transactionReference: input.transactionReference,
         },
-        ipAddress: req.ip
-      }
+        ipAddress: req.ip,
+      },
     });
 
     res.status(201).json({
       data: {
         id: payment.id,
         status: payment.status,
-        proofRequired: env.MANUAL_PAYMENT_PROOF_REQUIRED
+        proofRequired: env.MANUAL_PAYMENT_PROOF_REQUIRED,
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 const proofTypes: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
-  "application/pdf": "pdf"
+  "application/pdf": "pdf",
 };
 
 router.put(
   "/manual/:paymentId/proof",
   express.raw({
     type: Object.keys(proofTypes),
-    limit: env.MANUAL_PAYMENT_PROOF_MAX_BYTES
+    limit: env.MANUAL_PAYMENT_PROOF_MAX_BYTES,
   }),
   asyncHandler(async (req, res) => {
     requireBillingManager(req.auth!.role);
@@ -393,7 +391,7 @@ router.put(
       throw new AppError(
         415,
         "INVALID_PAYMENT_PROOF",
-        "Upload a JPEG, PNG, WebP or PDF payment proof."
+        "Upload a JPEG, PNG, WebP or PDF payment proof.",
       );
     }
 
@@ -402,16 +400,16 @@ router.put(
         id: paymentId,
         method: "MANUAL",
         invoice: { workspaceId: req.auth!.workspaceId },
-        status: { in: ["PENDING", "UNDER_REVIEW"] }
+        status: { in: ["PENDING", "UNDER_REVIEW"] },
       },
-      include: { manualSubmission: true }
+      include: { manualSubmission: true },
     });
 
     if (!payment?.manualSubmission) {
       throw new AppError(
         404,
         "MANUAL_PAYMENT_NOT_FOUND",
-        "Manual payment submission was not found."
+        "Manual payment submission was not found.",
       );
     }
 
@@ -422,8 +420,9 @@ router.put(
       payment.manualSubmission.proofStorageKey &&
       payment.manualSubmission.proofStorageKey !== storageKey
     ) {
-      await removeStorageFile(payment.manualSubmission.proofStorageKey)
-        .catch(() => undefined);
+      await removeStorageFile(payment.manualSubmission.proofStorageKey).catch(
+        () => undefined,
+      );
     }
 
     const filename = (req.get("x-file-name") ?? `payment-proof.${extension}`)
@@ -437,12 +436,12 @@ router.put(
           proofStorageKey: storageKey,
           proofFilename: filename,
           proofContentType: contentType,
-          proofSizeBytes: BigInt(req.body.length)
-        }
+          proofSizeBytes: BigInt(req.body.length),
+        },
       }),
       prisma.paymentAttempt.update({
         where: { id: payment.id },
-        data: { status: "UNDER_REVIEW" }
+        data: { status: "UNDER_REVIEW" },
       }),
       prisma.auditLog.create({
         data: {
@@ -454,18 +453,18 @@ router.put(
           metadata: {
             filename,
             contentType,
-            sizeBytes: req.body.length
+            sizeBytes: req.body.length,
           },
-          ipAddress: req.ip
-        }
-      })
+          ipAddress: req.ip,
+        },
+      }),
     ]);
 
     res.json({
       data: { id: payment.id, status: "UNDER_REVIEW" },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.post(
@@ -475,50 +474,58 @@ router.post(
     const invoiceId = invoiceIdSchema.parse(req.params.invoiceId);
     const invoice = await assertInvoicePayable(
       invoiceId,
-      req.auth!.workspaceId
+      req.auth!.workspaceId,
     );
 
     if (!env.SSLCOMMERZ_ENABLED) {
       throw new AppError(
         503,
         "SSLCOMMERZ_DISABLED",
-        "SSLCOMMERZ payment is currently disabled."
+        "SSLCOMMERZ payment is currently disabled.",
       );
     }
 
-    if (invoice.payments.some(payment =>
-      new Set(["PENDING", "PROCESSING", "UNDER_REVIEW", "PAID"]).has(payment.status)
-    )) {
+    if (
+      invoice.payments.some((payment) =>
+        new Set(["PENDING", "PROCESSING", "UNDER_REVIEW", "PAID"]).has(
+          payment.status,
+        ),
+      )
+    ) {
       throw new AppError(
         409,
         "PAYMENT_ALREADY_IN_PROGRESS",
-        "This invoice already has an active payment attempt."
+        "This invoice already has an active payment attempt.",
       );
     }
 
     const [preference, user, workspace] = await Promise.all([
       prisma.billingPreference.findUnique({
-        where: { workspaceId: req.auth!.workspaceId }
+        where: { workspaceId: req.auth!.workspaceId },
       }),
       prisma.user.findUnique({
         where: { id: req.auth!.userId },
-        select: { name: true, email: true }
+        select: { name: true, email: true },
       }),
       prisma.workspace.findUnique({
         where: { id: req.auth!.workspaceId },
-        select: { name: true }
-      })
+        select: { name: true },
+      }),
     ]);
 
-    const address = preference?.billingAddress as null | undefined | {
-      line1?: string;
-      city?: string;
-      region?: string;
-      postalCode?: string;
-      countryCode?: string;
-    };
+    const address = preference?.billingAddress as
+      | null
+      | undefined
+      | {
+          line1?: string;
+          city?: string;
+          region?: string;
+          postalCode?: string;
+          countryCode?: string;
+        };
     const customerEmail = preference?.billingEmail ?? user?.email;
-    const customerName = preference?.companyName ?? user?.name ?? workspace?.name;
+    const customerName =
+      preference?.companyName ?? user?.name ?? workspace?.name;
     const customerPhone = preference?.billingPhone;
 
     if (
@@ -532,7 +539,7 @@ router.post(
       throw new AppError(
         422,
         "BILLING_DETAILS_REQUIRED",
-        "Complete billing name, email, phone and address before starting SSLCOMMERZ checkout."
+        "Complete billing name, email, phone and address before starting SSLCOMMERZ checkout.",
       );
     }
 
@@ -545,8 +552,8 @@ router.post(
         amountMinor: invoice.amountMinor,
         currency: invoice.currency,
         providerTransactionId: transactionId,
-        initiatedAt: new Date()
-      }
+        initiatedAt: new Date(),
+      },
     });
 
     try {
@@ -565,7 +572,7 @@ router.post(
         region: address.region ?? null,
         postalCode: address.postalCode ?? null,
         country: address.countryCode ?? preference?.countryCode ?? "BD",
-        productName: `${invoice.planVersion.plan.name} subscription`
+        productName: `${invoice.planVersion.plan.name} subscription`,
       });
 
       await prisma.$transaction([
@@ -573,8 +580,8 @@ router.post(
           where: { id: payment.id },
           data: {
             gatewaySessionId: session.sessionKey,
-            rawInitiation: session.raw as Prisma.InputJsonValue
-          }
+            rawInitiation: session.raw as Prisma.InputJsonValue,
+          },
         }),
         prisma.auditLog.create({
           data: {
@@ -586,11 +593,11 @@ router.post(
             metadata: {
               invoiceId: invoice.id,
               transactionId,
-              sandbox: env.SSLCOMMERZ_SANDBOX
+              sandbox: env.SSLCOMMERZ_SANDBOX,
             },
-            ipAddress: req.ip
-          }
-        })
+            ipAddress: req.ip,
+          },
+        }),
       ]);
 
       res.status(201).json({
@@ -598,22 +605,25 @@ router.post(
           paymentId: payment.id,
           transactionId,
           gatewayPageUrl: session.gatewayPageUrl,
-          sandbox: env.SSLCOMMERZ_SANDBOX
+          sandbox: env.SSLCOMMERZ_SANDBOX,
         },
-        meta: { requestId: req.id }
+        meta: { requestId: req.id },
       });
     } catch (error) {
       await prisma.paymentAttempt.update({
         where: { id: payment.id },
         data: {
           status: "FAILED",
-          failureReason: error instanceof Error ? error.message : "Gateway initiation failed.",
-          completedAt: new Date()
-        }
+          failureReason:
+            error instanceof Error
+              ? error.message
+              : "Gateway initiation failed.",
+          completedAt: new Date(),
+        },
       });
       throw error;
     }
-  })
+  }),
 );
 
 export default router;

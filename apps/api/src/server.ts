@@ -1,10 +1,14 @@
 import "dotenv/config";
 import { app } from "./app.js";
 import { env } from "./config/env.js";
-import { closeRedis, connectRedis, getRedisHealth } from "./infrastructure/redis.js";
+import {
+  closeRedis,
+  connectRedis,
+  getRedisHealth,
+} from "./infrastructure/redis.js";
 import {
   startImageOptimizationScheduler,
-  stopImageOptimizationScheduler
+  stopImageOptimizationScheduler,
 } from "./modules/processing/image-optimization-scheduler.js";
 
 let server: ReturnType<typeof app.listen> | null = null;
@@ -13,7 +17,7 @@ let shuttingDown = false;
 async function start(): Promise<void> {
   await connectRedis().catch(() => {
     console.error(
-      "Initial Redis connection failed. Readiness will remain unavailable until Redis reconnects."
+      "Initial Redis connection failed. Readiness will remain unavailable until Redis reconnects.",
     );
   });
 
@@ -33,7 +37,7 @@ async function shutdown(signal: string): Promise<void> {
 
   if (server) {
     await new Promise<void>((resolve, reject) => {
-      server!.close(error => {
+      server!.close((error) => {
         if (error) reject(error);
         else resolve();
       });
@@ -47,7 +51,7 @@ async function shutdown(signal: string): Promise<void> {
 process.on("SIGTERM", () => {
   void shutdown("SIGTERM")
     .then(() => process.exit(0))
-    .catch(error => {
+    .catch((error) => {
       console.error(error);
       process.exit(1);
     });
@@ -56,13 +60,13 @@ process.on("SIGTERM", () => {
 process.on("SIGINT", () => {
   void shutdown("SIGINT")
     .then(() => process.exit(0))
-    .catch(error => {
+    .catch((error) => {
       console.error(error);
       process.exit(1);
     });
 });
 
-void start().catch(error => {
+void start().catch((error) => {
   console.error("API startup failed:", error);
   process.exit(1);
 });

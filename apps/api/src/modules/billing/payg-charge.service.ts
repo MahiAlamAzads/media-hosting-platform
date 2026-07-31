@@ -22,28 +22,26 @@ async function notifyFailure(input: {
   const [workspace, preference, owner] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: input.workspaceId },
-      select: { name: true }
+      select: { name: true },
     }),
     prisma.billingPreference.findUnique({
       where: { workspaceId: input.workspaceId },
-      select: { billingEmail: true }
+      select: { billingEmail: true },
     }),
     prisma.workspaceMember.findFirst({
       where: {
         workspaceId: input.workspaceId,
-        role: "OWNER"
+        role: "OWNER",
       },
       include: {
         user: {
-          select: { email: true }
-        }
-      }
-    })
+          select: { email: true },
+        },
+      },
+    }),
   ]);
 
-  const recipient =
-    preference?.billingEmail ??
-    owner?.user.email;
+  const recipient = preference?.billingEmail ?? owner?.user.email;
 
   if (!recipient) return;
 
@@ -63,15 +61,15 @@ async function notifyFailure(input: {
       `<strong>${workspace?.name ?? "your workspace"}</strong> failed.</p>` +
       `<p>${input.reason}</p>` +
       `<p>PAYG has been paused and hard limits are active again. ` +
-      `Update the saved payment method in Billing &gt; Pay as you go.</p>`
+      `Update the saved payment method in Billing &gt; Pay as you go.</p>`,
   }).catch(() => undefined);
 }
 
 export async function chargePendingPaygForWorkspace(
   workspaceId: string,
-  force = false
+  force = false,
 ): Promise<boolean> {
-  const prepared = await prisma.$transaction(async tx => {
+  const prepared = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`
       SELECT "id"
       FROM "Workspace"
@@ -84,15 +82,15 @@ export async function chargePendingPaygForWorkspace(
       include: {
         defaultPaymentMethod: {
           include: {
-            providerCustomer: true
-          }
+            providerCustomer: true,
+          },
         },
         workspace: {
           include: {
-            subscription: true
-          }
-        }
-      }
+            subscription: true,
+          },
+        },
+      },
     });
 
     if (
@@ -108,12 +106,9 @@ export async function chargePendingPaygForWorkspace(
       where: {
         workspaceId,
         status: "PENDING",
-        chargeAttemptId: null
+        chargeAttemptId: null,
       },
-      orderBy: [
-        { periodStart: "asc" },
-        { createdAt: "asc" }
-      ]
+      orderBy: [{ periodStart: "asc" }, { createdAt: "asc" }],
     });
 
     if (!oldestEntry) return null;
@@ -129,15 +124,15 @@ export async function chargePendingPaygForWorkspace(
         chargeAttemptId: null,
         periodStart,
         periodEnd,
-        currency
+        currency,
       },
       orderBy: { createdAt: "asc" },
-      take: 500
+      take: 500,
     });
 
     const amountMinor = entries.reduce(
       (total, entry) => total + entry.amountMinor,
-      0n
+      0n,
     );
 
     const periodClosingSoon =
@@ -161,26 +156,26 @@ export async function chargePendingPaygForWorkspace(
         status: "PROCESSING",
         initiatedAt: new Date(),
         periodStart,
-        periodEnd
-      }
+        periodEnd,
+      },
     });
 
     const assigned = await tx.paygLedgerEntry.updateMany({
       where: {
-        id: { in: entries.map(entry => entry.id) },
+        id: { in: entries.map((entry) => entry.id) },
         status: "PENDING",
-        chargeAttemptId: null
+        chargeAttemptId: null,
       },
       data: {
-        chargeAttemptId: attempt.id
-      }
+        chargeAttemptId: attempt.id,
+      },
     });
 
     if (assigned.count !== entries.length) {
       throw new AppError(
         409,
         "PAYG_CHARGE_CONFLICT",
-        "PAYG usage changed while preparing the card charge."
+        "PAYG usage changed while preparing the card charge.",
       );
     }
 
@@ -192,7 +187,7 @@ export async function chargePendingPaygForWorkspace(
       providerCustomerId:
         policy.defaultPaymentMethod.providerCustomer.providerCustomerId,
       providerPaymentMethodId:
-        policy.defaultPaymentMethod.providerPaymentMethodId
+        policy.defaultPaymentMethod.providerPaymentMethodId,
     };
   });
 
@@ -203,7 +198,7 @@ export async function chargePendingPaygForWorkspace(
       throw new AppError(
         503,
         "PAYG_PROVIDER_UNAVAILABLE",
-        "The saved-card provider does not support automatic charging."
+        "The saved-card provider does not support automatic charging.",
       );
     }
 
@@ -213,33 +208,32 @@ export async function chargePendingPaygForWorkspace(
       amountMinor: prepared.amountMinor,
       currency: prepared.currency,
       workspaceId,
-      chargeAttemptId: prepared.attempt.id
+      chargeAttemptId: prepared.attempt.id,
     });
 
     const succeeded = intent.status === "succeeded";
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       await tx.paygChargeAttempt.update({
         where: { id: prepared.attempt.id },
         data: {
           status: succeeded ? "PAID" : "REQUIRES_ACTION",
-          providerPaymentIntentId:
-            intent.id ? String(intent.id) : null,
+          providerPaymentIntentId: intent.id ? String(intent.id) : null,
           completedAt: succeeded ? new Date() : null,
           failureCode: succeeded
             ? null
             : String(intent.status ?? "requires_action"),
           failureReason: succeeded
             ? null
-            : "The card issuer requires customer action."
-        }
+            : "The card issuer requires customer action.",
+        },
       });
 
       await tx.paygLedgerEntry.updateMany({
         where: { chargeAttemptId: prepared.attempt.id },
         data: {
-          status: succeeded ? "CHARGED" : "FAILED"
-        }
+          status: succeeded ? "CHARGED" : "FAILED",
+        },
       });
 
       if (!succeeded) {
@@ -248,9 +242,8 @@ export async function chargePendingPaygForWorkspace(
           data: {
             status: "PAUSED_PAYMENT_FAILED",
             pausedAt: new Date(),
-            pauseReason:
-              "The saved card requires customer authentication."
-          }
+            pauseReason: "The saved card requires customer authentication.",
+          },
         });
       }
     });
@@ -260,31 +253,28 @@ export async function chargePendingPaygForWorkspace(
         workspaceId,
         amountMinor: prepared.amountMinor,
         currency: prepared.currency,
-        reason:
-          "The card issuer requires customer authentication."
+        reason: "The card issuer requires customer authentication.",
       });
     }
 
     return succeeded;
   } catch (error) {
     const reason =
-      error instanceof Error
-        ? error.message
-        : "Automatic card charge failed.";
+      error instanceof Error ? error.message : "Automatic card charge failed.";
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       await tx.paygChargeAttempt.update({
         where: { id: prepared.attempt.id },
         data: {
           status: "FAILED",
           completedAt: new Date(),
-          failureReason: reason
-        }
+          failureReason: reason,
+        },
       });
 
       await tx.paygLedgerEntry.updateMany({
         where: { chargeAttemptId: prepared.attempt.id },
-        data: { status: "FAILED" }
+        data: { status: "FAILED" },
       });
 
       await tx.paygPolicy.update({
@@ -292,8 +282,8 @@ export async function chargePendingPaygForWorkspace(
         data: {
           status: "PAUSED_PAYMENT_FAILED",
           pausedAt: new Date(),
-          pauseReason: reason
-        }
+          pauseReason: reason,
+        },
       });
     });
 
@@ -301,16 +291,14 @@ export async function chargePendingPaygForWorkspace(
       workspaceId,
       amountMinor: prepared.amountMinor,
       currency: prepared.currency,
-      reason
+      reason,
     });
 
     return false;
   }
 }
 
-export async function chargePendingPayg(
-  force = false
-): Promise<{
+export async function chargePendingPayg(force = false): Promise<{
   checked: number;
   charged: number;
 }> {
@@ -321,30 +309,25 @@ export async function chargePendingPayg(
       workspace: {
         paygPolicy: {
           is: {
-            status: { in: ["ACTIVE", "DISABLED"] }
-          }
-        }
-      }
+            status: { in: ["ACTIVE", "DISABLED"] },
+          },
+        },
+      },
     },
     distinct: ["workspaceId"],
-    select: { workspaceId: true }
+    select: { workspaceId: true },
   });
 
   let charged = 0;
 
   for (const policy of pendingWorkspaces) {
-    if (
-      await chargePendingPaygForWorkspace(
-        policy.workspaceId,
-        force
-      )
-    ) {
+    if (await chargePendingPaygForWorkspace(policy.workspaceId, force)) {
       charged += 1;
     }
   }
 
   return {
     checked: pendingWorkspaces.length,
-    charged
+    charged,
   };
 }

@@ -5,7 +5,7 @@ import {
   nextUsageThreshold,
   usageAlertThresholds,
   usageSeverity,
-  usageThresholdMessage
+  usageThresholdMessage,
 } from "../../../../src/modules/billing/usage-alert-policy.js";
 
 describe("Phase 12 usage alert policy", () => {
@@ -28,14 +28,13 @@ describe("Phase 12 usage alert policy", () => {
     expect(usageSeverity(100)).toBe("EXCEEDED");
   });
 
-
   it("formats alert values for human-readable emails", () => {
-    expect(
-      formatUsageMetricValue("DELIVERY_BYTES", "1073741824")
-    ).toBe("1.0 GB");
-    expect(
-      formatUsageMetricValue("VIDEO_PROCESSING_SECONDS", "90")
-    ).toBe("1.5 min");
+    expect(formatUsageMetricValue("DELIVERY_BYTES", "1073741824")).toBe(
+      "1.0 GB",
+    );
+    expect(formatUsageMetricValue("VIDEO_PROCESSING_SECONDS", "90")).toBe(
+      "1.5 min",
+    );
   });
 
   it("describes selected PAYG behavior at 100 percent", () => {
@@ -44,8 +43,8 @@ describe("Phase 12 usage alert policy", () => {
         metric: "DELIVERY_BYTES",
         threshold: 100,
         blocked: false,
-        paygEnabled: true
-      })
+        paygEnabled: true,
+      }),
     ).toContain("Pay as you go is active");
   });
 
@@ -54,8 +53,8 @@ describe("Phase 12 usage alert policy", () => {
       usageThresholdMessage({
         metric: "DELIVERY_BYTES",
         threshold: 100,
-        blocked: true
-      })
+        blocked: true,
+      }),
     ).toContain("Public CDN and signed delivery requests are blocked");
   });
 });

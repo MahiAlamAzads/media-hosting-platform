@@ -7,7 +7,7 @@ import {
   usageAlertThresholds,
   usageMetricLabel,
   usageThresholdMessage,
-  type UsageAlertThreshold
+  type UsageAlertThreshold,
 } from "./usage-alert-policy.js";
 import type { UsageMetricName } from "./billing.types.js";
 import { shouldRunThrottled } from "../../infrastructure/cache.js";
@@ -16,13 +16,13 @@ const retryAfterMilliseconds = 10 * 60 * 1000;
 const scheduledWorkspaces = new Set<string>();
 
 function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, character => {
+  return value.replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
       "&": "&amp;",
       "<": "&lt;",
       ">": "&gt;",
       '"': "&quot;",
-      "'": "&#039;"
+      "'": "&#039;",
     };
     return entities[character] ?? character;
   });
@@ -30,9 +30,7 @@ function escapeHtml(value: string): string {
 
 function errorText(error: unknown): string {
   return (
-    error instanceof Error
-      ? error.message
-      : "Unknown email delivery error."
+    error instanceof Error ? error.message : "Unknown email delivery error."
   ).slice(0, 1_000);
 }
 
@@ -72,7 +70,7 @@ function emailText(input: {
     metric: input.metric,
     threshold: input.threshold,
     blocked: input.blocked,
-    paygEnabled: input.paygEnabled
+    paygEnabled: input.paygEnabled,
   });
   const current = formatUsageMetricValue(input.metric, input.current);
   const limit = formatUsageMetricValue(input.metric, input.limit);
@@ -90,7 +88,7 @@ function emailText(input: {
     `Billing period ends: ${input.periodEnd.toISOString()}`,
     "",
     `Review usage: ${env.WEB_URL}/dashboard/billing/usage`,
-    `Compare plans: ${env.WEB_URL}/dashboard/billing/plans`
+    `Compare plans: ${env.WEB_URL}/dashboard/billing/plans`,
   ].join("\n");
 }
 
@@ -110,7 +108,7 @@ function emailHtml(input: {
     metric: input.metric,
     threshold: input.threshold,
     blocked: input.blocked,
-    paygEnabled: input.paygEnabled
+    paygEnabled: input.paygEnabled,
   });
   const formattedCurrent = formatUsageMetricValue(input.metric, input.current);
   const formattedLimit = formatUsageMetricValue(input.metric, input.limit);
@@ -165,22 +163,22 @@ async function claimEmail(alertId: string): Promise<boolean> {
         { emailStatus: { in: ["PENDING", "FAILED"] } },
         {
           emailStatus: "SENDING",
-          lastEmailAttemptAt: { lt: staleBefore }
-        }
-      ]
+          lastEmailAttemptAt: { lt: staleBefore },
+        },
+      ],
     },
     data: {
       emailStatus: "SENDING",
       lastEmailAttemptAt: new Date(),
-      emailLastError: null
-    }
+      emailLastError: null,
+    },
   });
 
   return claimed.count === 1;
 }
 
 export async function evaluateUsageAlertsForWorkspace(
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{
   created: number;
   emailed: number;
@@ -198,15 +196,15 @@ export async function evaluateUsageAlertsForWorkspace(
             where: { role: "OWNER" },
             take: 1,
             select: {
-              user: { select: { email: true } }
-            }
+              user: { select: { email: true } },
+            },
           },
           billingPreference: {
-            select: { billingEmail: true }
-          }
-        }
-      }
-    }
+            select: { billingEmail: true },
+          },
+        },
+      },
+    },
   });
 
   if (!subscription) {
@@ -234,14 +232,16 @@ export async function evaluateUsageAlertsForWorkspace(
       if (metric.percent < threshold) continue;
 
       const inserted = await prisma.usageAlert.createMany({
-        data: [{
-          workspaceId,
-          metric: metric.metric,
-          threshold,
-          periodStart: subscription.periodStart,
-          periodEnd: subscription.periodEnd
-        }],
-        skipDuplicates: true
+        data: [
+          {
+            workspaceId,
+            metric: metric.metric,
+            threshold,
+            periodStart: subscription.periodStart,
+            periodEnd: subscription.periodEnd,
+          },
+        ],
+        skipDuplicates: true,
       });
       created += inserted.count;
 
@@ -252,9 +252,9 @@ export async function evaluateUsageAlertsForWorkspace(
             metric: metric.metric,
             threshold,
             periodStart: subscription.periodStart,
-            periodEnd: subscription.periodEnd
-          }
-        }
+            periodEnd: subscription.periodEnd,
+          },
+        },
       });
 
       if (!alert || alert.emailSentAt || !recipient) continue;
@@ -271,7 +271,7 @@ export async function evaluateUsageAlertsForWorkspace(
             metric: metric.metric,
             threshold,
             blocked,
-            paygEnabled
+            paygEnabled,
           }),
           text: emailText({
             workspaceName: subscription.workspace.name,
@@ -283,7 +283,7 @@ export async function evaluateUsageAlertsForWorkspace(
             limit: metric.limit,
             periodEnd: snapshot.subscription.periodEnd,
             blocked,
-            paygEnabled
+            paygEnabled,
           }),
           html: emailHtml({
             workspaceName: subscription.workspace.name,
@@ -295,8 +295,8 @@ export async function evaluateUsageAlertsForWorkspace(
             limit: metric.limit,
             periodEnd: snapshot.subscription.periodEnd,
             blocked,
-            paygEnabled
-          })
+            paygEnabled,
+          }),
         });
 
         await prisma.usageAlert.update({
@@ -305,8 +305,8 @@ export async function evaluateUsageAlertsForWorkspace(
             emailStatus: "SENT",
             emailRecipient: recipient,
             emailSentAt: new Date(),
-            emailLastError: null
-          }
+            emailLastError: null,
+          },
         });
         emailed += 1;
       } catch (error) {
@@ -315,8 +315,8 @@ export async function evaluateUsageAlertsForWorkspace(
           data: {
             emailStatus: "FAILED",
             emailRecipient: recipient,
-            emailLastError: errorText(error)
-          }
+            emailLastError: errorText(error),
+          },
         });
         failed += 1;
       }
@@ -334,9 +334,9 @@ export async function evaluateUsageAlertsForAllWorkspaces(): Promise<{
 }> {
   const subscriptions = await prisma.workspaceSubscription.findMany({
     where: {
-      status: { in: ["ACTIVE", "TRIALING", "GRACE_PERIOD"] }
+      status: { in: ["ACTIVE", "TRIALING", "GRACE_PERIOD"] },
     },
-    select: { workspaceId: true }
+    select: { workspaceId: true },
   });
 
   let created = 0;
@@ -345,7 +345,7 @@ export async function evaluateUsageAlertsForAllWorkspaces(): Promise<{
 
   for (const subscription of subscriptions) {
     const result = await evaluateUsageAlertsForWorkspace(
-      subscription.workspaceId
+      subscription.workspaceId,
     );
     created += result.created;
     emailed += result.emailed;
@@ -356,39 +356,39 @@ export async function evaluateUsageAlertsForAllWorkspaces(): Promise<{
     workspaces: subscriptions.length,
     created,
     emailed,
-    failed
+    failed,
   };
 }
 
-export function scheduleUsageAlertEvaluation(
-  workspaceId: string
-): void {
+export function scheduleUsageAlertEvaluation(workspaceId: string): void {
   if (scheduledWorkspaces.has(workspaceId)) return;
   scheduledWorkspaces.add(workspaceId);
 
   void shouldRunThrottled(
     "usage-alert-evaluation",
     workspaceId,
-    env.REDIS_USAGE_ALERT_DEBOUNCE_SECONDS
-  ).then(shouldRun => {
-    if (!shouldRun) {
+    env.REDIS_USAGE_ALERT_DEBOUNCE_SECONDS,
+  )
+    .then((shouldRun) => {
+      if (!shouldRun) {
+        scheduledWorkspaces.delete(workspaceId);
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        void evaluateUsageAlertsForWorkspace(workspaceId)
+          .catch((error) => {
+            console.error("Usage alert evaluation failed:", error);
+          })
+          .finally(() => {
+            scheduledWorkspaces.delete(workspaceId);
+          });
+      }, 1_000);
+
+      timer.unref();
+    })
+    .catch((error) => {
       scheduledWorkspaces.delete(workspaceId);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      void evaluateUsageAlertsForWorkspace(workspaceId)
-        .catch(error => {
-          console.error("Usage alert evaluation failed:", error);
-        })
-        .finally(() => {
-          scheduledWorkspaces.delete(workspaceId);
-        });
-    }, 1_000);
-
-    timer.unref();
-  }).catch(error => {
-    scheduledWorkspaces.delete(workspaceId);
-    console.error("Usage alert scheduling failed:", error);
-  });
+      console.error("Usage alert scheduling failed:", error);
+    });
 }

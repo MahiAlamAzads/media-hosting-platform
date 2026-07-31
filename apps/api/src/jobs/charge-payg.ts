@@ -9,8 +9,8 @@ async function main(): Promise<void> {
 
   console.log(
     `PAYG policies checked: ${result.checked}; ` +
-    `charges completed: ${result.charged}; ` +
-    `expired authorizations released: ${released}`
+      `charges completed: ${result.charged}; ` +
+      `expired authorizations released: ${released}`,
   );
 }
 

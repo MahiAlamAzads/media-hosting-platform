@@ -11,46 +11,60 @@ const regularGroups = [
       ["Overview", "/dashboard", "bi-speedometer2"],
       ["Media", "/dashboard/media", "bi-images"],
       ["Folders", "/dashboard/folders", "bi-folder2-open"],
-      ["Upload", "/dashboard/upload", "bi-cloud-arrow-up"]
-    ]
+      ["Upload", "/dashboard/upload", "bi-cloud-arrow-up"],
+    ],
   },
   {
     label: "Billing",
     links: [
       ["Billing overview", "/dashboard/billing", "bi-credit-card"],
-      ["Choose payment model", "/dashboard/billing/revenue-model", "bi-signpost-split"],
+      [
+        "Choose payment model",
+        "/dashboard/billing/revenue-model",
+        "bi-signpost-split",
+      ],
       ["Subscription plans", "/dashboard/billing/plans", "bi-calendar-check"],
       ["Prepaid PAYG", "/dashboard/billing/pay-as-you-go", "bi-wallet2"],
       ["Enterprise", "/dashboard/billing/enterprise", "bi-buildings"],
       ["Usage and limits", "/dashboard/billing/usage", "bi-bar-chart"],
       ["Usage alerts", "/dashboard/billing/alerts", "bi-bell"],
       ["Payments", "/dashboard/billing/payments", "bi-wallet2"],
-      ["Billing settings", "/dashboard/billing/settings", "bi-receipt"]
-    ]
+      ["Billing settings", "/dashboard/billing/settings", "bi-receipt"],
+    ],
   },
   {
     label: "Developer",
     links: [
       ["Developer integration", "/dashboard/api-docs", "bi-braces"],
-      ["Integration guide", "/dashboard/api-docs/integrations", "bi-code-square"],
+      [
+        "Integration guide",
+        "/dashboard/api-docs/integrations",
+        "bi-code-square",
+      ],
       ["AI agent skills", "/dashboard/api-docs/ai-agent-skills", "bi-stars"],
       ["API keys", "/dashboard/api-keys", "bi-key"],
       ["Audit logs", "/dashboard/audit", "bi-clock-history"],
-      ["Legacy usage", "/dashboard/usage", "bi-pie-chart"]
-    ]
+      ["Legacy usage", "/dashboard/usage", "bi-pie-chart"],
+    ],
   },
   {
     label: "Account",
     links: [
       ["Account", "/dashboard/account", "bi-person-circle"],
-      ["Security", "/dashboard/security", "bi-shield-check"]
-    ]
-  }
+      ["Security", "/dashboard/security", "bi-shield-check"],
+    ],
+  },
 ] as const;
 
 const platformAdminGroup = {
   label: "Platform",
-  links: [["Open admin console", process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:3002", "bi-shield-lock"]]
+  links: [
+    [
+      "Open admin console",
+      process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:3002",
+      "bi-shield-lock",
+    ],
+  ],
 } as const;
 
 const mobileLinks = [
@@ -58,24 +72,28 @@ const mobileLinks = [
   ["Media", "/dashboard/media", "bi-images"],
   ["Upload", "/dashboard/upload", "bi-cloud-arrow-up"],
   ["Billing", "/dashboard/billing", "bi-credit-card"],
-  ["Account", "/dashboard/account", "bi-person-circle"]
+  ["Account", "/dashboard/account", "bi-person-circle"],
 ] as const;
 
 function Nav({
   close,
-  isPlatformAdmin
+  isPlatformAdmin,
 }: {
   close?: () => void;
   isPlatformAdmin: boolean;
 }) {
   const pathname = usePathname();
   const groups = isPlatformAdmin
-    ? [...regularGroups.slice(0, 3), platformAdminGroup, ...regularGroups.slice(3)]
+    ? [
+        ...regularGroups.slice(0, 3),
+        platformAdminGroup,
+        ...regularGroups.slice(3),
+      ]
     : regularGroups;
 
   return (
     <nav className="app-nav nav flex-column">
-      {groups.map(group => (
+      {groups.map((group) => (
         <div className="app-nav-group" key={group.label}>
           <div className="app-nav-label">{group.label}</div>
           {group.links.map(([label, href, icon]) => {
@@ -102,18 +120,14 @@ function Nav({
   );
 }
 
-export function DashboardShell({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
 
   useEffect(() => {
     void apiRequest<{ data: { isPlatformAdmin: boolean } }>(
-      "/api/v1/account/me"
+      "/api/v1/account/me",
     )
-      .then(response => {
+      .then((response) => {
         setIsPlatformAdmin(response.data.isPlatformAdmin);
       })
       .catch(() => undefined);
@@ -125,9 +139,7 @@ export function DashboardShell({
   }
 
   function toggleMobile(open: boolean): void {
-    document
-      .getElementById("mobileSidebar")
-      ?.classList.toggle("show", open);
+    document.getElementById("mobileSidebar")?.classList.toggle("show", open);
     document
       .getElementById("mobileBackdrop")
       ?.classList.toggle("d-none", !open);
@@ -161,7 +173,10 @@ export function DashboardShell({
           />
         </div>
         <div className="offcanvas-body p-0">
-          <Nav close={() => toggleMobile(false)} isPlatformAdmin={isPlatformAdmin} />
+          <Nav
+            close={() => toggleMobile(false)}
+            isPlatformAdmin={isPlatformAdmin}
+          />
         </div>
       </div>
 
@@ -196,10 +211,7 @@ export function DashboardShell({
             >
               Pricing
             </a>
-            <a
-              className="btn btn-primary btn-sm"
-              href="/dashboard/upload"
-            >
+            <a className="btn btn-primary btn-sm" href="/dashboard/upload">
               <i className="bi bi-cloud-arrow-up me-1" />
               Upload
             </a>

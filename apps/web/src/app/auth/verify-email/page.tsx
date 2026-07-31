@@ -5,10 +5,7 @@ import { VerifyEmailClient } from "./verify-email-client";
 
 function Fallback() {
   return (
-    <AuthShell
-      title="Verify email"
-      subtitle="Secure account confirmation."
-    >
+    <AuthShell title="Verify email" subtitle="Secure account confirmation.">
       <LoadingBlock label="Reading verification link…" />
     </AuthShell>
   );

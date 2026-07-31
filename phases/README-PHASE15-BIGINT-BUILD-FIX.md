@@ -6,15 +6,15 @@ frontend compiler target is lower than ES2020.
 It replaces frontend BigInt literal syntax such as:
 
 ```ts
-0n
-100n
+0n;
+100n;
 ```
 
 with target-compatible constructor syntax:
 
 ```ts
-BigInt(0)
-BigInt(100)
+BigInt(0);
+BigInt(100);
 ```
 
 Files fixed:

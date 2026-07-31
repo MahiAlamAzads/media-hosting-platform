@@ -64,29 +64,29 @@ export default function UserDetailPage() {
     email: "",
     password: "",
     status: "ACTIVE",
-    emailVerified: true
+    emailVerified: true,
   });
   const [message, setMessage] = useState("");
-  const [variant, setVariant] =
-    useState<"success" | "danger">("success");
+  const [variant, setVariant] = useState<"success" | "danger">("success");
   const [busy, setBusy] = useState(false);
 
   async function load(): Promise<void> {
     const response = await apiRequest<{ data: UserDetail }>(
-      `/api/v1/admin/console/users/${params.userId}`
+      `/api/v1/admin/console/users/${params.userId}`,
     );
     setData(response.data);
     setForm({
       name: response.data.name,
       email: response.data.email,
       password: "",
-      status: response.data.status === "DELETED" ? "SUSPENDED" : response.data.status,
-      emailVerified: Boolean(response.data.emailVerifiedAt)
+      status:
+        response.data.status === "DELETED" ? "SUSPENDED" : response.data.status,
+      emailVerified: Boolean(response.data.emailVerifiedAt),
     });
   }
 
   useEffect(() => {
-    void load().catch(error => {
+    void load().catch((error) => {
       setVariant("danger");
       setMessage((error as Error).message);
     });
@@ -103,8 +103,8 @@ export default function UserDetailPage() {
           email: form.email,
           status: form.status,
           emailVerified: form.emailVerified,
-          ...(form.password ? { password: form.password } : {})
-        })
+          ...(form.password ? { password: form.password } : {}),
+        }),
       });
       await load();
       setVariant("success");
@@ -123,7 +123,7 @@ export default function UserDetailPage() {
       const response = await apiRequest<{
         data: { revokedSessions: number };
       }>(`/api/v1/admin/console/users/${params.userId}/revoke-sessions`, {
-        method: "POST"
+        method: "POST",
       });
       await load();
       setVariant("success");
@@ -137,11 +137,12 @@ export default function UserDetailPage() {
   }
 
   async function deleteUser(): Promise<void> {
-    if (!window.confirm("Soft-delete this user and revoke all sessions?")) return;
+    if (!window.confirm("Soft-delete this user and revoke all sessions?"))
+      return;
     setBusy(true);
     try {
       await apiRequest(`/api/v1/admin/console/users/${params.userId}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
       window.location.assign("/users");
     } catch (error) {
@@ -159,8 +160,14 @@ export default function UserDetailPage() {
         title={data.name}
         subtitle={`${data.email} · created ${new Date(data.createdAt).toLocaleDateString()}`}
       >
-        <a className="btn btn-outline-secondary" href="/users">Back to users</a>
-        <button className="btn btn-outline-warning" disabled={busy} onClick={revokeSessions}>
+        <a className="btn btn-outline-secondary" href="/users">
+          Back to users
+        </a>
+        <button
+          className="btn btn-outline-warning"
+          disabled={busy}
+          onClick={revokeSessions}
+        >
           Revoke sessions
         </button>
         <button
@@ -177,16 +184,21 @@ export default function UserDetailPage() {
       <div className="row g-4">
         <div className="col-xl-5">
           <form className="card" onSubmit={save}>
-            <div className="card-header"><strong>User profile and access</strong></div>
+            <div className="card-header">
+              <strong>User profile and access</strong>
+            </div>
             <div className="card-body vstack gap-3">
               <div>
                 <label className="form-label">Name</label>
                 <input
                   className="form-control"
                   value={form.name}
-                  onChange={event => setForm(current => ({
-                    ...current, name: event.target.value
-                  }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
                 />
               </div>
               <div>
@@ -195,9 +207,12 @@ export default function UserDetailPage() {
                   className="form-control"
                   type="email"
                   value={form.email}
-                  onChange={event => setForm(current => ({
-                    ...current, email: event.target.value
-                  }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
                 />
               </div>
               <div>
@@ -207,9 +222,12 @@ export default function UserDetailPage() {
                   type="password"
                   placeholder="Leave blank to keep current password"
                   value={form.password}
-                  onChange={event => setForm(current => ({
-                    ...current, password: event.target.value
-                  }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      password: event.target.value,
+                    }))
+                  }
                 />
               </div>
               <div>
@@ -218,9 +236,12 @@ export default function UserDetailPage() {
                   className="form-select"
                   disabled={data.isPlatformAdmin || data.status === "DELETED"}
                   value={form.status}
-                  onChange={event => setForm(current => ({
-                    ...current, status: event.target.value
-                  }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: event.target.value,
+                    }))
+                  }
                 >
                   <option>ACTIVE</option>
                   <option>SUSPENDED</option>
@@ -232,9 +253,12 @@ export default function UserDetailPage() {
                   className="form-check-input"
                   type="checkbox"
                   checked={form.emailVerified}
-                  onChange={event => setForm(current => ({
-                    ...current, emailVerified: event.target.checked
-                  }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      emailVerified: event.target.checked,
+                    }))
+                  }
                 />
                 <label className="form-check-label" htmlFor="verified">
                   Email verified
@@ -242,7 +266,10 @@ export default function UserDetailPage() {
               </div>
             </div>
             <div className="card-footer text-end">
-              <button className="btn btn-primary" disabled={busy || data.status === "DELETED"}>
+              <button
+                className="btn btn-primary"
+                disabled={busy || data.status === "DELETED"}
+              >
                 Save changes
               </button>
             </div>
@@ -251,9 +278,11 @@ export default function UserDetailPage() {
 
         <div className="col-xl-7">
           <div className="card mb-4">
-            <div className="card-header"><strong>Workspaces and billing</strong></div>
+            <div className="card-header">
+              <strong>Workspaces and billing</strong>
+            </div>
             <div className="card-body vstack gap-3">
-              {data.memberships.map(item => {
+              {data.memberships.map((item) => {
                 const wallet = item.workspace.prepaidWallet;
                 const subscription = item.workspace.subscription;
                 return (
@@ -265,7 +294,10 @@ export default function UserDetailPage() {
                           {item.role} · {item.workspace.status}
                         </div>
                       </div>
-                      <a className="btn btn-sm btn-outline-primary" href={`/workspaces?query=${item.workspace.slug}`}>
+                      <a
+                        className="btn btn-sm btn-outline-primary"
+                        href={`/workspaces?query=${item.workspace.slug}`}
+                      >
                         Open
                       </a>
                     </div>
@@ -276,14 +308,16 @@ export default function UserDetailPage() {
                       </div>
                       <div className="col-sm-4">
                         <span className="text-secondary d-block">Revenue</span>
-                        {subscription?.revenueModel?.replaceAll("_", " ") ?? "—"}
+                        {subscription?.revenueModel?.replaceAll("_", " ") ??
+                          "—"}
                       </div>
                       <div className="col-sm-4">
                         <span className="text-secondary d-block">Wallet</span>
                         {wallet
                           ? formatMoneyMinor(
-                              BigInt(wallet.balanceMinor) - BigInt(wallet.reservedMinor),
-                              wallet.currency
+                              BigInt(wallet.balanceMinor) -
+                                BigInt(wallet.reservedMinor),
+                              wallet.currency,
                             )
                           : "—"}
                       </div>
@@ -311,15 +345,28 @@ export default function UserDetailPage() {
           </div>
 
           <div className="card">
-            <div className="card-header"><strong>Active sessions</strong></div>
+            <div className="card-header">
+              <strong>Active sessions</strong>
+            </div>
             <div className="table-responsive">
               <table className="table table-sm align-middle mb-0">
-                <thead><tr><th>Created</th><th>Last used</th><th>IP</th><th>Agent</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Created</th>
+                    <th>Last used</th>
+                    <th>IP</th>
+                    <th>Agent</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {data.sessions.map(session => (
+                  {data.sessions.map((session) => (
                     <tr key={session.id}>
                       <td>{new Date(session.createdAt).toLocaleString()}</td>
-                      <td>{session.lastUsedAt ? new Date(session.lastUsedAt).toLocaleString() : "—"}</td>
+                      <td>
+                        {session.lastUsedAt
+                          ? new Date(session.lastUsedAt).toLocaleString()
+                          : "—"}
+                      </td>
                       <td>{session.ipAddress ?? "—"}</td>
                       <td className="text-truncate" style={{ maxWidth: 260 }}>
                         {session.userAgent ?? "—"}
@@ -327,9 +374,14 @@ export default function UserDetailPage() {
                     </tr>
                   ))}
                   {data.sessions.length === 0 && (
-                    <tr><td colSpan={4} className="text-center text-secondary py-3">
-                      No active sessions.
-                    </td></tr>
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="text-center text-secondary py-3"
+                      >
+                        No active sessions.
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>

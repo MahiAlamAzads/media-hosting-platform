@@ -11,7 +11,7 @@ describe("Phase 5 protected routes", () => {
     ["GET", "/api/v1/folders/c1234567890123456789012345"],
     ["PATCH", "/api/v1/folders/c1234567890123456789012345"],
     ["GET", "/api/v1/usage/summary"],
-    ["GET", "/api/v1/audit-logs"]
+    ["GET", "/api/v1/audit-logs"],
   ])("%s %s requires authentication", async (method, route) => {
     const agent = request(app);
     const normalizedMethod = method.toLowerCase();

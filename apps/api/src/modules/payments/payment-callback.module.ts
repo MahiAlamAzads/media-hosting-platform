@@ -4,9 +4,13 @@ import { PaymentCallbackHttpRepository } from "./payment-callback.facade.reposit
 import { PaymentCallbackHttpRoute } from "./payment-callback.facade.route.js";
 import { PaymentCallbackHttpService } from "./payment-callback.facade.service.js";
 import { PaymentCallbackHttpValidation } from "./payment-callback.facade.validation.js";
-const repository=new PaymentCallbackHttpRepository();
-const validation=new PaymentCallbackHttpValidation();
-const service=new PaymentCallbackHttpService(repository,validation);
-const controller=new PaymentCallbackHttpController(service);
-const route=new PaymentCallbackHttpRoute(controller);
-export const paymentCallbackModule: ApiModuleDescriptor={name:"payment-callback",mountPath:"/api/v1/payment-callbacks/sslcommerz",router:route.router};
+const repository = new PaymentCallbackHttpRepository();
+const validation = new PaymentCallbackHttpValidation();
+const service = new PaymentCallbackHttpService(repository, validation);
+const controller = new PaymentCallbackHttpController(service);
+const route = new PaymentCallbackHttpRoute(controller);
+export const paymentCallbackModule: ApiModuleDescriptor = {
+  name: "payment-callback",
+  mountPath: "/api/v1/payment-callbacks/sslcommerz",
+  router: route.router,
+};

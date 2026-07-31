@@ -2,7 +2,7 @@ import { prisma } from "@media/database";
 
 async function main(): Promise<void> {
   const workspaces = await prisma.workspace.findMany({
-    select: { id: true }
+    select: { id: true },
   });
 
   let corrected = 0;
@@ -12,38 +12,37 @@ async function main(): Promise<void> {
       prisma.mediaAsset.aggregate({
         where: {
           workspaceId: workspace.id,
-          status: { in: ["READY", "PROCESSING", "DELETED"] }
+          status: { in: ["READY", "PROCESSING", "DELETED"] },
         },
-        _sum: { sizeBytes: true }
+        _sum: { sizeBytes: true },
       }),
       prisma.mediaVariant.aggregate({
         where: {
           mediaAsset: { workspaceId: workspace.id },
-          status: "READY"
+          status: "READY",
         },
-        _sum: { sizeBytes: true }
+        _sum: { sizeBytes: true },
       }),
       prisma.quotaReservation.aggregate({
         where: {
           workspaceId: workspace.id,
           metric: "STORAGE_BYTES",
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
-        _sum: { quantity: true }
-      })
+        _sum: { quantity: true },
+      }),
     ]);
 
     const used =
-      (originals._sum.sizeBytes ?? 0n) +
-      (variants._sum.sizeBytes ?? 0n);
+      (originals._sum.sizeBytes ?? 0n) + (variants._sum.sizeBytes ?? 0n);
     const reserved = reservations._sum.quantity ?? 0n;
 
     await prisma.workspace.update({
       where: { id: workspace.id },
       data: {
         storageUsedBytes: used,
-        storageReservedBytes: reserved
-      }
+        storageReservedBytes: reserved,
+      },
     });
 
     corrected += 1;

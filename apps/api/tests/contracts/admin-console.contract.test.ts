@@ -9,7 +9,7 @@ const protectedRoutes = [
   "/api/v1/admin/console/operations",
   "/api/v1/admin/console/audit",
   "/api/v1/admin/console/security-events",
-  "/api/v1/admin/console/system"
+  "/api/v1/admin/console/system",
 ];
 
 describe("advanced admin console contract", () => {

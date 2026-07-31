@@ -11,17 +11,18 @@ describe("Phase 19 admin billing control contract", () => {
   const protectedRoutes = [
     ["get", "/api/v1/admin/console/billing-control"],
     ["post", "/api/v1/admin/subscriptions/example-workspace/manual-override"],
-    ["patch", "/api/v1/admin/console/wallets/example-workspace"]
+    ["patch", "/api/v1/admin/console/wallets/example-workspace"],
   ] as const;
 
   for (const [method, path] of protectedRoutes) {
     it(`protects ${method.toUpperCase()} ${path}`, async () => {
       const agent = request(app);
-      const response = method === "get"
-        ? await agent.get(path)
-        : method === "post"
-          ? await agent.post(path)
-          : await agent.patch(path);
+      const response =
+        method === "get"
+          ? await agent.get(path)
+          : method === "post"
+            ? await agent.post(path)
+            : await agent.patch(path);
 
       expect(response.status).toBe(401);
       expect(response.body.error.code).toBe("AUTH_REQUIRED");
@@ -32,20 +33,20 @@ describe("Phase 19 admin billing control contract", () => {
     const document = JSON.parse(
       await readFile(
         resolve(currentDirectory, "../../src/openapi/openapi.json"),
-        "utf8"
-      )
+        "utf8",
+      ),
     ) as { paths: Record<string, Record<string, unknown>> };
 
     expect(
-      document.paths["/api/v1/admin/console/billing-control"]?.get
+      document.paths["/api/v1/admin/console/billing-control"]?.get,
     ).toBeDefined();
     expect(
       document.paths[
         "/api/v1/admin/subscriptions/{workspaceId}/manual-override"
-      ]?.post
+      ]?.post,
     ).toBeDefined();
     expect(
-      document.paths["/api/v1/admin/console/wallets/{workspaceId}"]?.patch
+      document.paths["/api/v1/admin/console/wallets/{workspaceId}"]?.patch,
     ).toBeDefined();
   });
 
@@ -53,16 +54,16 @@ describe("Phase 19 admin billing control contract", () => {
     const plansRoute = await readFile(
       resolve(
         currentDirectory,
-        "../../src/modules/admin/admin-plans.legacy.ts"
+        "../../src/modules/admin/admin-plans.legacy.ts",
       ),
-      "utf8"
+      "utf8",
     );
     const consoleRoute = await readFile(
       resolve(
         currentDirectory,
-        "../../src/modules/admin/admin-console.legacy.ts"
+        "../../src/modules/admin/admin-console.legacy.ts",
       ),
-      "utf8"
+      "utf8",
     );
 
     expect(plansRoute).toContain("subscription.admin_override");

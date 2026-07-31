@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { AppError } from "../../shared/http.js";
 import type {
   BillingCurrencyName,
-  GatewayValidationRecord
+  GatewayValidationRecord,
 } from "./payment.types.js";
 
 export function moneyMinorToDecimal(amountMinor: bigint): string {
@@ -21,7 +21,7 @@ export function decimalToMoneyMinor(value: string): bigint {
     throw new AppError(
       422,
       "INVALID_PAYMENT_AMOUNT",
-      "Gateway amount is not a valid two-decimal monetary value."
+      "Gateway amount is not a valid two-decimal monetary value.",
     );
   }
 
@@ -31,7 +31,7 @@ export function decimalToMoneyMinor(value: string): bigint {
     throw new AppError(
       422,
       "INVALID_PAYMENT_AMOUNT",
-      "Gateway amount is missing its whole-number component."
+      "Gateway amount is missing its whole-number component.",
     );
   }
 
@@ -63,7 +63,7 @@ export function validateGatewayRecord(input: {
     throw new AppError(
       409,
       "PAYMENT_NOT_VALID",
-      "SSLCOMMERZ did not validate this transaction as successful."
+      "SSLCOMMERZ did not validate this transaction as successful.",
     );
   }
 
@@ -71,30 +71,33 @@ export function validateGatewayRecord(input: {
     throw new AppError(
       409,
       "PAYMENT_TRANSACTION_MISMATCH",
-      "Gateway transaction ID does not match the payment attempt."
+      "Gateway transaction ID does not match the payment attempt.",
     );
   }
 
-  if (record.value_a !== input.invoiceId || record.value_b !== input.workspaceId) {
+  if (
+    record.value_a !== input.invoiceId ||
+    record.value_b !== input.workspaceId
+  ) {
     throw new AppError(
       409,
       "PAYMENT_REFERENCE_MISMATCH",
-      "Gateway invoice references do not match this workspace."
+      "Gateway invoice references do not match this workspace.",
     );
   }
 
   const originalCurrency = String(
-    record.currency_type || record.currency || ""
+    record.currency_type || record.currency || "",
   ).trim();
   const originalAmount = String(
-    record.currency_amount || record.amount || ""
+    record.currency_amount || record.amount || "",
   ).trim();
 
   if (originalCurrency !== input.currency) {
     throw new AppError(
       409,
       "PAYMENT_CURRENCY_MISMATCH",
-      "Gateway currency does not match the invoice currency."
+      "Gateway currency does not match the invoice currency.",
     );
   }
 
@@ -102,7 +105,7 @@ export function validateGatewayRecord(input: {
     throw new AppError(
       409,
       "PAYMENT_AMOUNT_MISMATCH",
-      "Gateway amount does not match the invoice amount."
+      "Gateway amount does not match the invoice amount.",
     );
   }
 
@@ -110,37 +113,43 @@ export function validateGatewayRecord(input: {
 
   return {
     riskLevel: Number.isFinite(riskLevel) ? riskLevel : 0,
-    riskTitle: typeof record.risk_title === "string" ? record.risk_title : null
+    riskTitle: typeof record.risk_title === "string" ? record.risk_title : null,
   };
 }
 
-
 export function isValidPaymentProof(
   contentType: string,
-  value: Buffer
+  value: Buffer,
 ): boolean {
   if (contentType === "image/jpeg") {
-    return value.length >= 3 &&
+    return (
+      value.length >= 3 &&
       value[0] === 0xff &&
       value[1] === 0xd8 &&
-      value[2] === 0xff;
+      value[2] === 0xff
+    );
   }
 
   if (contentType === "image/png") {
     const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-    return value.length >= signature.length &&
-      value.subarray(0, signature.length).equals(signature);
+    return (
+      value.length >= signature.length &&
+      value.subarray(0, signature.length).equals(signature)
+    );
   }
 
   if (contentType === "image/webp") {
-    return value.length >= 12 &&
+    return (
+      value.length >= 12 &&
       value.subarray(0, 4).toString("ascii") === "RIFF" &&
-      value.subarray(8, 12).toString("ascii") === "WEBP";
+      value.subarray(8, 12).toString("ascii") === "WEBP"
+    );
   }
 
   if (contentType === "application/pdf") {
-    return value.length >= 5 &&
-      value.subarray(0, 5).toString("ascii") === "%PDF-";
+    return (
+      value.length >= 5 && value.subarray(0, 5).toString("ascii") === "%PDF-"
+    );
   }
 
   return false;

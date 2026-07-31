@@ -21,13 +21,11 @@ const stats = {
   sweeps: 0,
   lastSweepAt: null as string | null,
   lastProcessedAt: null as string | null,
-  lastError: null as string | null
+  lastError: null as string | null,
 };
 
 export type ImageOptimizationQueueStatus =
-  | "QUEUED"
-  | "DISABLED"
-  | "NOT_APPLICABLE";
+  "QUEUED" | "DISABLED" | "NOT_APPLICABLE";
 
 type ImageOptimizationResponse = {
   status: ImageOptimizationQueueStatus;
@@ -37,7 +35,7 @@ type ImageOptimizationResponse = {
 
 export function imageOptimizationResponse(
   mediaType: "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT" | "OTHER",
-  queuedForProcessing: boolean
+  queuedForProcessing: boolean,
 ): ImageOptimizationResponse {
   const applicable = mediaType === "IMAGE";
   return {
@@ -46,17 +44,19 @@ export function imageOptimizationResponse(
       : env.IMAGE_OPTIMIZATION_ENABLED && queuedForProcessing
         ? "QUEUED"
         : "DISABLED",
-    outputFormat: applicable && env.IMAGE_OPTIMIZATION_ENABLED
-      ? env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT
-      : null,
-    variants: applicable && env.IMAGE_OPTIMIZATION_ENABLED
-      ? ["THUMBNAIL", "PREVIEW"]
-      : []
+    outputFormat:
+      applicable && env.IMAGE_OPTIMIZATION_ENABLED
+        ? env.IMAGE_OPTIMIZATION_OUTPUT_FORMAT
+        : null,
+    variants:
+      applicable && env.IMAGE_OPTIMIZATION_ENABLED
+        ? ["THUMBNAIL", "PREVIEW"]
+        : [],
   };
 }
 
 export async function findPendingImageAssetIds(
-  limit = env.IMAGE_OPTIMIZATION_BATCH_SIZE
+  limit = env.IMAGE_OPTIMIZATION_BATCH_SIZE,
 ): Promise<string[]> {
   const assets = await prisma.mediaAsset.findMany({
     where: {
@@ -68,23 +68,23 @@ export async function findPendingImageAssetIds(
           variants: {
             none: {
               kind: "THUMBNAIL",
-              status: "READY"
-            }
-          }
+              status: "READY",
+            },
+          },
         },
         {
           variants: {
             none: {
               kind: "PREVIEW",
-              status: "READY"
-            }
-          }
-        }
-      ]
+              status: "READY",
+            },
+          },
+        },
+      ],
     },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     take: limit,
-    select: { id: true }
+    select: { id: true },
   });
 
   return assets.map((asset: { id: string }) => asset.id);
@@ -98,7 +98,7 @@ async function runAsset(assetId: string): Promise<void> {
   const allowed = await shouldRunThrottled(
     "image-optimization",
     assetId,
-    env.IMAGE_OPTIMIZATION_LOCK_TTL_SECONDS
+    env.IMAGE_OPTIMIZATION_LOCK_TTL_SECONDS,
   );
 
   if (!allowed) {
@@ -122,10 +122,7 @@ async function runAsset(assetId: string): Promise<void> {
 
     stats.failed += 1;
     stats.lastError = sanitizeError(error);
-    console.error(
-      `Automatic image optimization failed for ${assetId}:`,
-      error
-    );
+    console.error(`Automatic image optimization failed for ${assetId}:`, error);
   }
 }
 
@@ -142,12 +139,11 @@ function drain(): void {
     activeAssetIds.add(assetId);
 
     let job: Promise<void>;
-    job = runAsset(assetId)
-      .finally(() => {
-        activeJobs.delete(job);
-        activeAssetIds.delete(assetId);
-        drain();
-      });
+    job = runAsset(assetId).finally(() => {
+      activeJobs.delete(job);
+      activeAssetIds.delete(assetId);
+      drain();
+    });
 
     activeJobs.add(job);
   }
@@ -211,6 +207,6 @@ export function getImageOptimizationHealth() {
     sweepIntervalMs: env.IMAGE_OPTIMIZATION_SWEEP_INTERVAL_MS,
     queued: queue.length,
     active: activeAssetIds.size,
-    ...stats
+    ...stats,
   };
 }

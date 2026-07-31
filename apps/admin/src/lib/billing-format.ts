@@ -26,7 +26,7 @@ export const metricLabels: Record<UsageMetricName, string> = {
   WORKSPACE_MEMBERS: "Workspace seats",
   API_KEYS: "Active API keys",
   CONCURRENT_JOBS: "Concurrent jobs",
-  MAX_FILE_SIZE_BYTES: "Maximum file size"
+  MAX_FILE_SIZE_BYTES: "Maximum file size",
 };
 
 export function formatBytes(value: string | bigint): string {
@@ -46,7 +46,7 @@ export function formatBytes(value: string | bigint): string {
 
 export function formatMetricValue(
   metric: UsageMetricName,
-  value: string
+  value: string,
 ): string {
   if (
     metric === "STORAGE_BYTES" ||
@@ -77,10 +77,9 @@ export function progressClass(percent: number): string {
 
 export function formatMoneyMinor(
   value: string | bigint,
-  currency: "BDT" | "USD"
+  currency: "BDT" | "USD",
 ): string {
-  const amount =
-    typeof value === "bigint" ? value : BigInt(value || "0");
+  const amount = typeof value === "bigint" ? value : BigInt(value || "0");
   const negative = amount < BigInt(0);
   const absolute = negative ? -amount : amount;
   const whole = absolute / BigInt(100);

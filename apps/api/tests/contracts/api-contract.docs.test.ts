@@ -7,8 +7,8 @@ import { app } from "../../src/app.js";
 const openapi = JSON.parse(
   readFileSync(
     fileURLToPath(new URL("../../src/openapi/openapi.json", import.meta.url)),
-    "utf8"
-  )
+    "utf8",
+  ),
 );
 
 describe("internal API documentation", () => {

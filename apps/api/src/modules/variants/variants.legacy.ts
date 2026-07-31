@@ -1,10 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@media/database";
-import {
-  authenticate,
-  requireScope
-} from "../../middleware/authenticate.js";
+import { authenticate, requireScope } from "../../middleware/authenticate.js";
 import { ImageProcessor } from "../processing/image-processor.js";
 import { AppError, asyncHandler } from "../../shared/http.js";
 import { publicMediaPath, publicMediaUrl } from "../../shared/media-url.js";
@@ -24,34 +21,30 @@ router.get(
     const asset = await prisma.mediaAsset.findFirst({
       where: {
         id: assetId,
-        workspaceId: req.auth!.workspaceId
+        workspaceId: req.auth!.workspaceId,
       },
       select: {
         id: true,
         visibility: true,
-        status: true
-      }
+        status: true,
+      },
     });
 
     if (!asset) {
-      throw new AppError(
-        404,
-        "MEDIA_NOT_FOUND",
-        "Media asset was not found."
-      );
+      throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset was not found.");
     }
 
     const variants = await prisma.mediaVariant.findMany({
       where: {
-        mediaAssetId: asset.id
+        mediaAssetId: asset.id,
       },
       orderBy: {
-        kind: "asc"
-      }
+        kind: "asc",
+      },
     });
 
     res.json({
-      data: variants.map(variant => ({
+      data: variants.map((variant) => ({
         ...variant,
         sizeBytes: variant.sizeBytes?.toString() ?? null,
         publicPath:
@@ -65,11 +58,11 @@ router.get(
           asset.status === "READY" &&
           variant.status === "READY"
             ? publicMediaUrl(asset.id, variant.kind)
-            : null
+            : null,
       })),
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.post(
@@ -83,20 +76,16 @@ router.post(
         id: assetId,
         workspaceId: req.auth!.workspaceId,
         detectedMediaType: "IMAGE",
-        deletedAt: null
+        deletedAt: null,
       },
       select: {
         id: true,
-        visibility: true
-      }
+        visibility: true,
+      },
     });
 
     if (!asset) {
-      throw new AppError(
-        404,
-        "IMAGE_NOT_FOUND",
-        "Image asset was not found."
-      );
+      throw new AppError(404, "IMAGE_NOT_FOUND", "Image asset was not found.");
     }
 
     await processor.process(asset.id, { force: true });
@@ -104,31 +93,29 @@ router.post(
     const variants = await prisma.mediaVariant.findMany({
       where: {
         mediaAssetId: asset.id,
-        status: "READY"
+        status: "READY",
       },
-      select: { kind: true }
+      select: { kind: true },
     });
 
-    const variantKinds = new Set(variants.map(variant => variant.kind));
+    const variantKinds = new Set(variants.map((variant) => variant.kind));
 
     res.status(200).json({
       data: {
         assetId: asset.id,
         processingComplete: true,
         thumbnailUrl:
-          asset.visibility === "PUBLIC" &&
-          variantKinds.has("THUMBNAIL")
+          asset.visibility === "PUBLIC" && variantKinds.has("THUMBNAIL")
             ? publicMediaUrl(asset.id, "THUMBNAIL")
             : null,
         previewUrl:
-          asset.visibility === "PUBLIC" &&
-          variantKinds.has("PREVIEW")
+          asset.visibility === "PUBLIC" && variantKinds.has("PREVIEW")
             ? publicMediaUrl(asset.id, "PREVIEW")
-            : null
+            : null,
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 export default router;

@@ -6,7 +6,7 @@ import { extname, join, relative, resolve } from "node:path";
 const projectRoot = resolve(import.meta.dirname, "..");
 const sourceRoots = [
   join(projectRoot, "apps", "web", "src"),
-  join(projectRoot, "apps", "admin", "src")
+  join(projectRoot, "apps", "admin", "src"),
 ];
 
 async function collectFiles(directory) {
@@ -16,7 +16,7 @@ async function collectFiles(directory) {
   for (const entry of entries) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) {
-      files.push(...await collectFiles(path));
+      files.push(...(await collectFiles(path)));
       continue;
     }
 
@@ -119,7 +119,7 @@ function asyncBodyStarts(source) {
         source,
         openParenthesis,
         "(",
-        ")"
+        ")",
       );
       if (closeParenthesis < 0) continue;
       const openBrace = source.indexOf("{", closeParenthesis + 1);
@@ -153,12 +153,15 @@ function asyncBodyStarts(source) {
       continue;
     }
 
-    if (methodParenthesis >= 0 && (firstBrace < 0 || methodParenthesis < firstBrace)) {
+    if (
+      methodParenthesis >= 0 &&
+      (firstBrace < 0 || methodParenthesis < firstBrace)
+    ) {
       const closeParenthesis = matchingDelimiter(
         source,
         methodParenthesis,
         "(",
-        ")"
+        ")",
       );
       if (closeParenthesis < 0) continue;
       const openBrace = source.indexOf("{", closeParenthesis + 1);
@@ -215,8 +218,12 @@ for (const root of sourceRoots) {
 if (failures.length > 0) {
   console.error("Unsafe React form-event access found after await:");
   for (const failure of failures) console.error(`  - ${failure}`);
-  console.error("Capture the form before awaiting: const form = event.currentTarget;");
+  console.error(
+    "Capture the form before awaiting: const form = event.currentTarget;",
+  );
   process.exit(1);
 }
 
-console.log("PASS: no event.currentTarget access occurs after await in async form handlers.");
+console.log(
+  "PASS: no event.currentTarget access occurs after await in async form handlers.",
+);

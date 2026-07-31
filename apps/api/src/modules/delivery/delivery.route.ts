@@ -8,16 +8,13 @@ import { DeliveryService } from "./delivery.service.js";
 const repository = new PrismaDeliveryRepository();
 
 const service = new DeliveryService(repository, {
-  fileSize: storageFileSize
+  fileSize: storageFileSize,
 });
 
 const controller = new DeliveryController(service);
 
 const router = Router();
 
-router.get(
-  "/:token",
-  asyncHandler(controller.stream)
-);
+router.get("/:token", asyncHandler(controller.stream));
 
 export default router;

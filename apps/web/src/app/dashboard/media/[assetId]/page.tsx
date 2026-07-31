@@ -1,13 +1,189 @@
 "use client";
-import { FormEvent,useEffect,useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { Feedback,LoadingBlock } from "@/components/feedback";
-import { apiRequest,API_URL } from "@/lib/api";
-type Asset={id:string;originalFilename:string;detectedMediaType:string;detectedContentType:string|null;sizeBytes:string;visibility:string;status:string;width:number|null;height:number|null;createdAt:string;folder:{id:string;name:string}|null;imgUrl:string|null;fileUrl:string|null;thumbnailUrl:string|null;previewUrl:string|null};
-export default function Page(){const {assetId}=useParams<{assetId:string}>();const [a,setA]=useState<Asset|null>(null);const [message,setMessage]=useState("");const load=()=>apiRequest<{data:Asset}>(`/api/v1/media/${assetId}`).then(r=>setA(r.data)).catch(e=>setMessage(e.message));
- useEffect(()=>{load()},[assetId]);async function save(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);await apiRequest(`/api/v1/media/${assetId}`,{method:"PATCH",body:JSON.stringify({originalFilename:f.get("name"),visibility:f.get("visibility")})});setMessage("Media updated.");load()}
- async function process(){await apiRequest(`/api/v1/variants/media/${assetId}/process`,{method:"POST"});setMessage("Optimized image variants regenerated.");load()}
- async function preview(){const r=await apiRequest<{data:{path:string}}>(`/api/v1/media/${assetId}/delivery-token`,{method:"POST",body:JSON.stringify({disposition:"inline"})});window.open(`${API_URL}${r.data.path}`,"_blank")}
- return <><PageHeader title="Media details" subtitle="Metadata, delivery and lifecycle controls."><a className="btn btn-outline-secondary" href="/dashboard/media">Back</a></PageHeader><Feedback message={message} variant="info"/>{!a?<LoadingBlock/>:<div className="row g-4"><div className="col-lg-8"><form className="card" onSubmit={save}><div className="card-header"><strong>Asset information</strong></div><div className="card-body"><div className="row g-3"><div className="col-md-8"><label className="form-label">Filename</label><input className="form-control" name="name" defaultValue={a.originalFilename}/></div><div className="col-md-4"><label className="form-label">Visibility</label><select className="form-select" name="visibility" defaultValue={a.visibility}><option>PRIVATE</option><option>PUBLIC</option></select></div><div className="col-md-6"><label className="form-label">Content type</label><input className="form-control" value={a.detectedContentType??"Unknown"} disabled/></div><div className="col-md-6"><label className="form-label">Media type</label><input className="form-control" value={a.detectedMediaType} disabled/></div>{(a.imgUrl??a.fileUrl)&&<div className="col-12"><label className="form-label">Public CDN URL</label><div className="input-group"><input className="form-control font-monospace" value={a.imgUrl??a.fileUrl??""} readOnly/><button className="btn btn-outline-secondary" type="button" onClick={()=>void navigator.clipboard.writeText(a.imgUrl??a.fileUrl??"")}><i className="bi bi-copy me-1"/>Copy</button></div>{a.imgUrl&&<div className="form-text">Use directly in an HTML <code>&lt;img&gt;</code> tag.</div>}</div>}</div></div><div className="card-footer bg-white"><button className="btn btn-primary">Save changes</button></div></form></div><div className="col-lg-4"><div className="card"><div className="card-header"><strong>Actions</strong></div><div className="card-body d-grid gap-2"><button className="btn btn-outline-primary" onClick={preview}><i className="bi bi-eye me-1"/>Open preview</button>{a.detectedMediaType==="IMAGE"&&<button className="btn btn-outline-secondary" onClick={process}><i className="bi bi-images me-1"/>Regenerate optimized variants</button>}<div className="small text-secondary mt-2">Status: {a.status}<br/>Dimensions: {a.width&&a.height?`${a.width}×${a.height}`:"—"}<br/>Created: {new Date(a.createdAt).toLocaleString()}</div></div></div></div></div>}</>
+import { Feedback, LoadingBlock } from "@/components/feedback";
+import { apiRequest, API_URL } from "@/lib/api";
+type Asset = {
+  id: string;
+  originalFilename: string;
+  detectedMediaType: string;
+  detectedContentType: string | null;
+  sizeBytes: string;
+  visibility: string;
+  status: string;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
+  folder: { id: string; name: string } | null;
+  imgUrl: string | null;
+  fileUrl: string | null;
+  thumbnailUrl: string | null;
+  previewUrl: string | null;
+};
+export default function Page() {
+  const { assetId } = useParams<{ assetId: string }>();
+  const [a, setA] = useState<Asset | null>(null);
+  const [message, setMessage] = useState("");
+  const load = () =>
+    apiRequest<{ data: Asset }>(`/api/v1/media/${assetId}`)
+      .then((r) => setA(r.data))
+      .catch((e) => setMessage(e.message));
+  useEffect(() => {
+    load();
+  }, [assetId]);
+  async function save(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    await apiRequest(`/api/v1/media/${assetId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        originalFilename: f.get("name"),
+        visibility: f.get("visibility"),
+      }),
+    });
+    setMessage("Media updated.");
+    load();
+  }
+  async function process() {
+    await apiRequest(`/api/v1/variants/media/${assetId}/process`, {
+      method: "POST",
+    });
+    setMessage("Optimized image variants regenerated.");
+    load();
+  }
+  async function preview() {
+    const r = await apiRequest<{ data: { path: string } }>(
+      `/api/v1/media/${assetId}/delivery-token`,
+      { method: "POST", body: JSON.stringify({ disposition: "inline" }) },
+    );
+    window.open(`${API_URL}${r.data.path}`, "_blank");
+  }
+  return (
+    <>
+      <PageHeader
+        title="Media details"
+        subtitle="Metadata, delivery and lifecycle controls."
+      >
+        <a className="btn btn-outline-secondary" href="/dashboard/media">
+          Back
+        </a>
+      </PageHeader>
+      <Feedback message={message} variant="info" />
+      {!a ? (
+        <LoadingBlock />
+      ) : (
+        <div className="row g-4">
+          <div className="col-lg-8">
+            <form className="card" onSubmit={save}>
+              <div className="card-header">
+                <strong>Asset information</strong>
+              </div>
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="col-md-8">
+                    <label className="form-label">Filename</label>
+                    <input
+                      className="form-control"
+                      name="name"
+                      defaultValue={a.originalFilename}
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Visibility</label>
+                    <select
+                      className="form-select"
+                      name="visibility"
+                      defaultValue={a.visibility}
+                    >
+                      <option>PRIVATE</option>
+                      <option>PUBLIC</option>
+                    </select>
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Content type</label>
+                    <input
+                      className="form-control"
+                      value={a.detectedContentType ?? "Unknown"}
+                      disabled
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Media type</label>
+                    <input
+                      className="form-control"
+                      value={a.detectedMediaType}
+                      disabled
+                    />
+                  </div>
+                  {(a.imgUrl ?? a.fileUrl) && (
+                    <div className="col-12">
+                      <label className="form-label">Public CDN URL</label>
+                      <div className="input-group">
+                        <input
+                          className="form-control font-monospace"
+                          value={a.imgUrl ?? a.fileUrl ?? ""}
+                          readOnly
+                        />
+                        <button
+                          className="btn btn-outline-secondary"
+                          type="button"
+                          onClick={() =>
+                            void navigator.clipboard.writeText(
+                              a.imgUrl ?? a.fileUrl ?? "",
+                            )
+                          }
+                        >
+                          <i className="bi bi-copy me-1" />
+                          Copy
+                        </button>
+                      </div>
+                      {a.imgUrl && (
+                        <div className="form-text">
+                          Use directly in an HTML <code>&lt;img&gt;</code> tag.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="card-footer bg-white">
+                <button className="btn btn-primary">Save changes</button>
+              </div>
+            </form>
+          </div>
+          <div className="col-lg-4">
+            <div className="card">
+              <div className="card-header">
+                <strong>Actions</strong>
+              </div>
+              <div className="card-body d-grid gap-2">
+                <button className="btn btn-outline-primary" onClick={preview}>
+                  <i className="bi bi-eye me-1" />
+                  Open preview
+                </button>
+                {a.detectedMediaType === "IMAGE" && (
+                  <button
+                    className="btn btn-outline-secondary"
+                    onClick={process}
+                  >
+                    <i className="bi bi-images me-1" />
+                    Regenerate optimized variants
+                  </button>
+                )}
+                <div className="small text-secondary mt-2">
+                  Status: {a.status}
+                  <br />
+                  Dimensions:{" "}
+                  {a.width && a.height ? `${a.width}×${a.height}` : "—"}
+                  <br />
+                  Created: {new Date(a.createdAt).toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

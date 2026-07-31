@@ -21,13 +21,13 @@ function credentials(): {
     throw new AppError(
       503,
       "SSLCOMMERZ_NOT_CONFIGURED",
-      "SSLCOMMERZ payment is not configured."
+      "SSLCOMMERZ payment is not configured.",
     );
   }
 
   return {
     storeId: env.SSLCOMMERZ_STORE_ID,
-    storePassword: env.SSLCOMMERZ_STORE_PASSWORD
+    storePassword: env.SSLCOMMERZ_STORE_PASSWORD,
   };
 }
 
@@ -37,12 +37,12 @@ function gatewayText(value: string, max: number): string {
 
 async function gatewayFetch(
   url: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Response> {
   try {
     return await fetch(url, {
       ...init,
-      signal: AbortSignal.timeout(15_000)
+      signal: AbortSignal.timeout(15_000),
     });
   } catch (error) {
     throw new AppError(
@@ -50,14 +50,15 @@ async function gatewayFetch(
       "PAYMENT_GATEWAY_UNAVAILABLE",
       "SSLCOMMERZ could not be reached.",
       {
-        cause: error instanceof Error ? error.message : "Network request failed."
-      }
+        cause:
+          error instanceof Error ? error.message : "Network request failed.",
+      },
     );
   }
 }
 
 async function parseJsonResponse(
-  response: Response
+  response: Response,
 ): Promise<Record<string, unknown>> {
   const body = await response.json().catch(() => null);
 
@@ -65,7 +66,7 @@ async function parseJsonResponse(
     throw new AppError(
       502,
       "PAYMENT_GATEWAY_ERROR",
-      "SSLCOMMERZ returned an invalid response."
+      "SSLCOMMERZ returned an invalid response.",
     );
   }
 
@@ -93,7 +94,7 @@ export async function initiateSslcommerz(input: {
     throw new AppError(
       422,
       "PAYMENT_AMOUNT_TOO_SMALL",
-      "SSLCOMMERZ requires a minimum BDT transaction amount of ৳10."
+      "SSLCOMMERZ requires a minimum BDT transaction amount of ৳10.",
     );
   }
 
@@ -101,7 +102,7 @@ export async function initiateSslcommerz(input: {
     throw new AppError(
       422,
       "BILLING_EMAIL_TOO_LONG",
-      "SSLCOMMERZ requires a billing email no longer than 50 characters."
+      "SSLCOMMERZ requires a billing email no longer than 50 characters.",
     );
   }
 
@@ -109,13 +110,12 @@ export async function initiateSslcommerz(input: {
     throw new AppError(
       422,
       "BILLING_PHONE_TOO_LONG",
-      "SSLCOMMERZ requires a billing phone no longer than 20 characters."
+      "SSLCOMMERZ requires a billing phone no longer than 20 characters.",
     );
   }
 
   const { storeId, storePassword } = credentials();
-  const callbackBase =
-    `${env.API_PUBLIC_URL}/api/v1/payment-callbacks/sslcommerz`;
+  const callbackBase = `${env.API_PUBLIC_URL}/api/v1/payment-callbacks/sslcommerz`;
   const amount = moneyMinorToDecimal(input.amountMinor);
   const form = new URLSearchParams({
     store_id: storeId,
@@ -143,75 +143,66 @@ export async function initiateSslcommerz(input: {
     value_a: input.invoiceId,
     value_b: input.workspaceId,
     value_c: input.subscriptionChangeId ?? "",
-    value_d: input.currency
+    value_d: input.currency,
   });
 
-  const response = await gatewayFetch(
-    `${baseUrl()}/gwprocess/v4/api.php`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/x-www-form-urlencoded"
-      },
-      body: form
-    }
-  );
+  const response = await gatewayFetch(`${baseUrl()}/gwprocess/v4/api.php`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: form,
+  });
   const data = await parseJsonResponse(response);
 
-  if (
-    data.status !== "SUCCESS" ||
-    typeof data.GatewayPageURL !== "string"
-  ) {
+  if (data.status !== "SUCCESS" || typeof data.GatewayPageURL !== "string") {
     throw new AppError(
       502,
       "PAYMENT_SESSION_FAILED",
       typeof data.failedreason === "string"
         ? data.failedreason
-        : "SSLCOMMERZ could not create a payment session."
+        : "SSLCOMMERZ could not create a payment session.",
     );
   }
 
   return {
     gatewayPageUrl: data.GatewayPageURL,
-    sessionKey:
-      typeof data.sessionkey === "string"
-        ? data.sessionkey
-        : null,
-    raw: data
+    sessionKey: typeof data.sessionkey === "string" ? data.sessionkey : null,
+    raw: data,
   };
 }
 
 export async function validateSslcommerzPayment(
-  validationId: string
+  validationId: string,
 ): Promise<GatewayValidationRecord> {
   const { storeId, storePassword } = credentials();
   const query = new URLSearchParams({
     val_id: validationId,
     store_id: storeId,
     store_passwd: storePassword,
-    format: "json"
+    format: "json",
   });
   const response = await gatewayFetch(
-    `${baseUrl()}/validator/api/validationserverAPI.php?${query}`
+    `${baseUrl()}/validator/api/validationserverAPI.php?${query}`,
   );
-  return await parseJsonResponse(response) as GatewayValidationRecord;
+  return (await parseJsonResponse(response)) as GatewayValidationRecord;
 }
 
 export async function querySslcommerzTransaction(
-  transactionId: string
+  transactionId: string,
 ): Promise<GatewayValidationRecord[]> {
   const { storeId, storePassword } = credentials();
   const query = new URLSearchParams({
     tran_id: transactionId,
     store_id: storeId,
     store_passwd: storePassword,
-    format: "json"
+    format: "json",
   });
   const response = await gatewayFetch(
-    `${baseUrl()}/validator/api/merchantTransIDvalidationAPI.php?${query}`
+    `${baseUrl()}/validator/api/merchantTransIDvalidationAPI.php?${query}`,
   );
   const data = await parseJsonResponse(response);
   return Array.isArray(data.element)
-    ? data.element as GatewayValidationRecord[]
+    ? (data.element as GatewayValidationRecord[])
     : [];
 }

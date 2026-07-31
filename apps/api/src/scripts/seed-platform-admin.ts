@@ -16,7 +16,7 @@ function platformAdminEmails(): Set<string> {
     (process.env.PLATFORM_ADMIN_EMAILS ?? "")
       .split(",")
       .map(normalizeEmail)
-      .filter(Boolean)
+      .filter(Boolean),
   );
 }
 
@@ -35,12 +35,12 @@ async function main(): Promise<void> {
 
   const now = new Date();
   const passwordHash = await argon2.hash(password, {
-    type: argon2.argon2id
+    type: argon2.argon2id,
   });
 
-  const result = await prisma.$transaction(async tx => {
+  const result = await prisma.$transaction(async (tx) => {
     const existingUser = await tx.user.findUnique({
-      where: { normalizedEmail: email }
+      where: { normalizedEmail: email },
     });
 
     const user = existingUser
@@ -53,8 +53,8 @@ async function main(): Promise<void> {
             passwordHash,
             emailVerifiedAt: existingUser.emailVerifiedAt ?? now,
             status: "ACTIVE",
-            passwordVersion: { increment: 1 }
-          }
+            passwordVersion: { increment: 1 },
+          },
         })
       : await tx.user.create({
           data: {
@@ -63,25 +63,25 @@ async function main(): Promise<void> {
             normalizedEmail: email,
             passwordHash,
             emailVerifiedAt: now,
-            status: "ACTIVE"
-          }
+            status: "ACTIVE",
+          },
         });
 
     if (existingUser) {
       await tx.session.updateMany({
         where: {
           userId: user.id,
-          revokedAt: null
+          revokedAt: null,
         },
         data: {
-          revokedAt: now
-        }
+          revokedAt: now,
+        },
       });
     }
 
     const existingMembership = await tx.workspaceMember.findFirst({
       where: { userId: user.id },
-      orderBy: { createdAt: "asc" }
+      orderBy: { createdAt: "asc" },
     });
 
     let workspace;
@@ -89,12 +89,12 @@ async function main(): Promise<void> {
     if (existingMembership) {
       workspace = await tx.workspace.update({
         where: { id: existingMembership.workspaceId },
-        data: { status: "ACTIVE" }
+        data: { status: "ACTIVE" },
       });
 
       await tx.workspaceMember.update({
         where: { id: existingMembership.id },
-        data: { role: "OWNER" }
+        data: { role: "OWNER" },
       });
     } else {
       const created = await tx.workspace.create({
@@ -103,35 +103,35 @@ async function main(): Promise<void> {
           slug: `platform-admin-${user.id.slice(-8)}`,
           storageRootKey: `pending/${user.id}`,
           status: "ACTIVE",
-          storageLimitBytes: 2147483648n
-        }
+          storageLimitBytes: 2147483648n,
+        },
       });
 
       workspace = await tx.workspace.update({
         where: { id: created.id },
         data: {
-          storageRootKey: `tenants/${created.id}`
-        }
+          storageRootKey: `tenants/${created.id}`,
+        },
       });
 
       await tx.workspaceMember.create({
         data: {
           userId: user.id,
           workspaceId: workspace.id,
-          role: "OWNER"
-        }
+          role: "OWNER",
+        },
       });
     }
 
     const subscription = await tx.workspaceSubscription.findUnique({
-      where: { workspaceId: workspace.id }
+      where: { workspaceId: workspace.id },
     });
 
     if (!subscription) {
       await createFreeBillingForWorkspace(tx, {
         workspaceId: workspace.id,
         billingEmail: email,
-        currency: "BDT"
+        currency: "BDT",
       });
     } else {
       await tx.billingPreference.upsert({
@@ -140,18 +140,18 @@ async function main(): Promise<void> {
           workspaceId: workspace.id,
           preferredCurrency: subscription.currency,
           preferredInterval: subscription.interval,
-          billingEmail: email
+          billingEmail: email,
         },
         update: {
-          billingEmail: email
-        }
+          billingEmail: email,
+        },
       });
     }
 
     return {
       userId: user.id,
       workspaceId: workspace.id,
-      created: !existingUser
+      created: !existingUser,
     };
   });
 
@@ -172,13 +172,13 @@ async function main(): Promise<void> {
   if (!isPlatformAdmin) {
     console.warn("");
     console.warn(
-      `Warning: add ${email} to PLATFORM_ADMIN_EMAILS in the root .env, then restart the API.`
+      `Warning: add ${email} to PLATFORM_ADMIN_EMAILS in the root .env, then restart the API.`,
     );
   }
 }
 
 main()
-  .catch(error => {
+  .catch((error) => {
     console.error("Platform admin seed failed.", error);
     process.exitCode = 1;
   })

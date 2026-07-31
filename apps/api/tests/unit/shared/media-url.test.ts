@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMediaUrlsForBase,
-  publicMediaPath
+  publicMediaPath,
 } from "../../../src/shared/media-url.js";
 
 describe("Phase 15 media URL contract", () => {
@@ -12,16 +12,15 @@ describe("Phase 15 media URL contract", () => {
         visibility: "PUBLIC",
         status: "READY",
         detectedMediaType: "IMAGE",
-        readyVariants: ["THUMBNAIL"]
-      })
+        readyVariants: ["THUMBNAIL"],
+      }),
     ).toEqual({
       isPublic: true,
       cdnPath: "/i/cm123",
       fileUrl: "https://cdn.alamahi.cloud/i/cm123",
       imgUrl: "https://cdn.alamahi.cloud/i/cm123",
-      thumbnailUrl:
-        "https://cdn.alamahi.cloud/i/cm123?variant=THUMBNAIL",
-      previewUrl: null
+      thumbnailUrl: "https://cdn.alamahi.cloud/i/cm123?variant=THUMBNAIL",
+      previewUrl: null,
     });
   });
 
@@ -31,15 +30,15 @@ describe("Phase 15 media URL contract", () => {
         assetId: "cm123",
         visibility: "PRIVATE",
         status: "READY",
-        detectedMediaType: "IMAGE"
-      })
+        detectedMediaType: "IMAGE",
+      }),
     ).toEqual({
       isPublic: false,
       cdnPath: null,
       fileUrl: null,
       imgUrl: null,
       thumbnailUrl: null,
-      previewUrl: null
+      previewUrl: null,
     });
   });
 
@@ -48,7 +47,7 @@ describe("Phase 15 media URL contract", () => {
       assetId: "cm456",
       visibility: "PUBLIC",
       status: "READY",
-      detectedMediaType: "DOCUMENT"
+      detectedMediaType: "DOCUMENT",
     });
 
     expect(urls.fileUrl).toBe("http://localhost:4000/i/cm456");
@@ -57,7 +56,7 @@ describe("Phase 15 media URL contract", () => {
 
   it("builds encoded short CDN paths", () => {
     expect(publicMediaPath("cm123", "PREVIEW")).toBe(
-      "/i/cm123?variant=PREVIEW"
+      "/i/cm123?variant=PREVIEW",
     );
   });
 });

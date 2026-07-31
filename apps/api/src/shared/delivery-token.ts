@@ -20,21 +20,21 @@ export function createDeliveryToken(input: {
       workspaceId: input.workspaceId,
       assetId: input.assetId,
       disposition: input.disposition,
-      type: "media-delivery"
+      type: "media-delivery",
     },
     env.MEDIA_SIGNING_SECRET,
     {
       subject: input.userId,
       issuer: "media-platform",
       audience: "media-delivery",
-      expiresIn: env.DELIVERY_TOKEN_TTL_SECONDS
-    }
+      expiresIn: env.DELIVERY_TOKEN_TTL_SECONDS,
+    },
   );
 }
 
 export function verifyDeliveryToken(token: string): DeliveryClaims {
   return jwt.verify(token, env.MEDIA_SIGNING_SECRET, {
     issuer: "media-platform",
-    audience: "media-delivery"
+    audience: "media-delivery",
   }) as DeliveryClaims;
 }

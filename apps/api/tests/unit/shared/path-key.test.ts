@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeResourceName,
-  replacePathPrefix
+  replacePathPrefix,
 } from "../../../src/shared/path-key.js";
 
 describe("normalizeResourceName", () => {
@@ -16,14 +16,14 @@ describe("replacePathPrefix", () => {
   });
 
   it("replaces a descendant prefix", () => {
-    expect(
-      replacePathPrefix("photos/2026/july", "photos", "images")
-    ).toBe("images/2026/july");
+    expect(replacePathPrefix("photos/2026/july", "photos", "images")).toBe(
+      "images/2026/july",
+    );
   });
 
   it("does not replace a partial name match", () => {
-    expect(
-      replacePathPrefix("photos-old/2026", "photos", "images")
-    ).toBe("photos-old/2026");
+    expect(replacePathPrefix("photos-old/2026", "photos", "images")).toBe(
+      "photos-old/2026",
+    );
   });
 });

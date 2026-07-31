@@ -3,7 +3,7 @@ import { verifyDeliveryToken } from "../../shared/delivery-token.js";
 import type { DeliveryRepository } from "./delivery.repository.js";
 import type {
   DeliveryDescriptor,
-  DeliveryDisposition
+  DeliveryDisposition,
 } from "./delivery.types.js";
 import { parseByteRange } from "./range-parser.js";
 
@@ -14,7 +14,7 @@ export interface DeliveryStorage {
 export class DeliveryService {
   constructor(
     private readonly repository: DeliveryRepository,
-    private readonly storage: DeliveryStorage
+    private readonly storage: DeliveryStorage,
   ) {}
 
   async authorizeDelivery(input: {
@@ -29,7 +29,7 @@ export class DeliveryService {
       throw new AppError(
         401,
         "INVALID_DELIVERY_TOKEN",
-        "Delivery token is invalid or expired."
+        "Delivery token is invalid or expired.",
       );
     }
 
@@ -37,21 +37,17 @@ export class DeliveryService {
       throw new AppError(
         401,
         "INVALID_DELIVERY_TOKEN",
-        "Delivery token type is invalid."
+        "Delivery token type is invalid.",
       );
     }
 
     const asset = await this.repository.findReadyAsset(
       claims.assetId,
-      claims.workspaceId
+      claims.workspaceId,
     );
 
     if (!asset) {
-      throw new AppError(
-        404,
-        "MEDIA_NOT_FOUND",
-        "Media asset was not found."
-      );
+      throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset was not found.");
     }
 
     const fileSizeBigInt = await this.storage.fileSize(asset.storageKey);
@@ -60,7 +56,7 @@ export class DeliveryService {
       throw new AppError(
         413,
         "MEDIA_TOO_LARGE",
-        "Media file is too large for this delivery path."
+        "Media file is too large for this delivery path.",
       );
     }
 
@@ -71,7 +67,7 @@ export class DeliveryService {
       throw new AppError(
         416,
         "INVALID_RANGE",
-        "Requested byte range is invalid."
+        "Requested byte range is invalid.",
       );
     }
 
@@ -80,13 +76,11 @@ export class DeliveryService {
       fileSize,
       range,
       statusCode: range ? 206 : 200,
-      contentLength: range
-        ? range.end - range.start + 1
-        : fileSize,
+      contentLength: range ? range.end - range.start + 1 : fileSize,
       contentRange: range
         ? `bytes ${range.start}-${range.end}/${fileSize}`
         : undefined,
-      disposition: claims.disposition as DeliveryDisposition
+      disposition: claims.disposition as DeliveryDisposition,
     };
   }
 }

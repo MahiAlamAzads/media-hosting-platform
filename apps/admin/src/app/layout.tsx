@@ -7,12 +7,14 @@ import { WhatsAppFloatingButton } from "@/components/whatsapp-floating-button";
 export const metadata: Metadata = {
   title: {
     default: "Admin Console",
-    template: "%s · Media Platform Admin"
+    template: "%s · Media Platform Admin",
   },
-  description: "Platform administration, billing operations and system health."
+  description: "Platform administration, billing operations and system health.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <body>

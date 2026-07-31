@@ -31,8 +31,8 @@ export default function BillingSettingsPage() {
 
   useEffect(() => {
     apiRequest<{ data: Settings }>("/api/v1/billing/settings")
-      .then(response => setSettings(response.data))
-      .catch(error => {
+      .then((response) => setSettings(response.data))
+      .catch((error) => {
         setVariant("danger");
         setMessage(error.message);
       });
@@ -64,10 +64,10 @@ export default function BillingSettingsPage() {
               city: form.get("city") || undefined,
               region: form.get("region") || undefined,
               postalCode: form.get("postalCode") || undefined,
-              countryCode: form.get("addressCountryCode") || undefined
-            }
-          })
-        }
+              countryCode: form.get("addressCountryCode") || undefined,
+            },
+          }),
+        },
       );
 
       setSettings(response.data);
@@ -170,7 +170,9 @@ export default function BillingSettingsPage() {
                 />
               </div>
 
-              <div className="col-12"><hr /></div>
+              <div className="col-12">
+                <hr />
+              </div>
 
               <div className="col-12">
                 <h2 className="h6">Billing address</h2>

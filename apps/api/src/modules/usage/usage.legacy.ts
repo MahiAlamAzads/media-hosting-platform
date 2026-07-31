@@ -1,20 +1,11 @@
 import { Router } from "express";
 import { prisma } from "@media/database";
-import {
-  authenticate,
-  requireScope
-} from "../../middleware/authenticate.js";
+import { authenticate, requireScope } from "../../middleware/authenticate.js";
 import { asyncHandler } from "../../shared/http.js";
 
 const router = Router();
 
-const mediaTypes = [
-  "IMAGE",
-  "VIDEO",
-  "AUDIO",
-  "DOCUMENT",
-  "OTHER"
-] as const;
+const mediaTypes = ["IMAGE", "VIDEO", "AUDIO", "DOCUMENT", "OTHER"] as const;
 
 router.use(authenticate);
 
@@ -37,51 +28,51 @@ router.get(
         select: {
           storageLimitBytes: true,
           storageUsedBytes: true,
-          storageReservedBytes: true
-        }
+          storageReservedBytes: true,
+        },
       }),
       prisma.mediaAsset.count({
         where: {
           workspaceId: auth.workspaceId,
           status: "READY",
-          deletedAt: null
-        }
+          deletedAt: null,
+        },
       }),
       prisma.mediaAsset.count({
         where: {
           workspaceId: auth.workspaceId,
-          status: "DELETED"
-        }
+          status: "DELETED",
+        },
       }),
       prisma.uploadSession.count({
         where: {
           workspaceId: auth.workspaceId,
           status: {
-            in: ["ACTIVE", "COMPLETING"]
-          }
-        }
+            in: ["ACTIVE", "COMPLETING"],
+          },
+        },
       }),
       prisma.folder.count({
         where: {
-          workspaceId: auth.workspaceId
-        }
+          workspaceId: auth.workspaceId,
+        },
       }),
-      ...mediaTypes.map(mediaType =>
+      ...mediaTypes.map((mediaType) =>
         prisma.mediaAsset.aggregate({
           where: {
             workspaceId: auth.workspaceId,
             status: "READY",
             deletedAt: null,
-            detectedMediaType: mediaType
+            detectedMediaType: mediaType,
           },
           _count: {
-            _all: true
+            _all: true,
           },
           _sum: {
-            sizeBytes: true
-          }
-        })
-      )
+            sizeBytes: true,
+          },
+        }),
+      ),
     ]);
 
     const mediaByType = mediaTypes.map((mediaType, index) => {
@@ -90,9 +81,7 @@ router.get(
       return {
         mediaType,
         count: aggregate?._count._all ?? 0,
-        sizeBytes: (
-          aggregate?._sum.sizeBytes ?? 0n
-        ).toString()
+        sizeBytes: (aggregate?._sum.sizeBytes ?? 0n).toString(),
       };
     });
 
@@ -107,20 +96,20 @@ router.get(
                 workspace.storageLimitBytes -
                 workspace.storageUsedBytes -
                 workspace.storageReservedBytes
-              ).toString()
+              ).toString(),
             }
           : null,
         counts: {
           readyAssets,
           deletedAssets,
           activeUploads,
-          folders
+          folders,
         },
-        mediaByType
+        mediaByType,
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 export default router;

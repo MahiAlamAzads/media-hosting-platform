@@ -9,9 +9,7 @@ import { API_URL } from "@/lib/api";
 export function ConfirmEmailClient() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("Processing…");
-  const [variant, setVariant] = useState<
-    "info" | "success" | "danger"
-  >("info");
+  const [variant, setVariant] = useState<"info" | "success" | "danger">("info");
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -25,17 +23,17 @@ export function ConfirmEmailClient() {
     void fetch(`${API_URL}/api/v1/account-public/confirm-email`, {
       method: "POST",
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
       },
-      body: JSON.stringify({ token })
-    }).then(async response => {
+      body: JSON.stringify({ token }),
+    }).then(async (response) => {
       const payload = await response.json();
 
       setVariant(response.ok ? "success" : "danger");
       setMessage(
         response.ok
           ? "Email changed. Please sign in again."
-          : payload.error?.message ?? "Confirmation failed."
+          : (payload.error?.message ?? "Confirmation failed."),
       );
     });
   }, [searchParams]);

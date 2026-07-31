@@ -4,9 +4,13 @@ import { UsageHttpRepository } from "./usage.facade.repository.js";
 import { UsageHttpRoute } from "./usage.facade.route.js";
 import { UsageHttpService } from "./usage.facade.service.js";
 import { UsageHttpValidation } from "./usage.facade.validation.js";
-const repository=new UsageHttpRepository();
-const validation=new UsageHttpValidation();
-const service=new UsageHttpService(repository,validation);
-const controller=new UsageHttpController(service);
-const route=new UsageHttpRoute(controller);
-export const usageModule: ApiModuleDescriptor={name:"usage",mountPath:"/api/v1/usage",router:route.router};
+const repository = new UsageHttpRepository();
+const validation = new UsageHttpValidation();
+const service = new UsageHttpService(repository, validation);
+const controller = new UsageHttpController(service);
+const route = new UsageHttpRoute(controller);
+export const usageModule: ApiModuleDescriptor = {
+  name: "usage",
+  mountPath: "/api/v1/usage",
+  router: route.router,
+};

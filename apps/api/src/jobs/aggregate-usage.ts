@@ -4,14 +4,14 @@ async function main(): Promise<void> {
   const subscriptions = await prisma.workspaceSubscription.findMany({
     where: {
       status: {
-        in: ["ACTIVE", "TRIALING", "GRACE_PERIOD"]
-      }
+        in: ["ACTIVE", "TRIALING", "GRACE_PERIOD"],
+      },
     },
     select: {
       workspaceId: true,
       periodStart: true,
-      periodEnd: true
-    }
+      periodEnd: true,
+    },
   });
 
   let aggregates = 0;
@@ -23,11 +23,11 @@ async function main(): Promise<void> {
         workspaceId: subscription.workspaceId,
         occurredAt: {
           gte: subscription.periodStart,
-          lt: subscription.periodEnd
-        }
+          lt: subscription.periodEnd,
+        },
       },
       _sum: { quantity: true },
-      _max: { occurredAt: true }
+      _max: { occurredAt: true },
     });
 
     for (const item of grouped) {
@@ -37,8 +37,8 @@ async function main(): Promise<void> {
             workspaceId: subscription.workspaceId,
             metric: item.metric,
             periodStart: subscription.periodStart,
-            periodEnd: subscription.periodEnd
-          }
+            periodEnd: subscription.periodEnd,
+          },
         },
         create: {
           workspaceId: subscription.workspaceId,
@@ -46,19 +46,19 @@ async function main(): Promise<void> {
           periodStart: subscription.periodStart,
           periodEnd: subscription.periodEnd,
           quantity: item._sum.quantity ?? 0n,
-          lastEventAt: item._max.occurredAt
+          lastEventAt: item._max.occurredAt,
         },
         update: {
           quantity: item._sum.quantity ?? 0n,
-          lastEventAt: item._max.occurredAt
-        }
+          lastEventAt: item._max.occurredAt,
+        },
       });
       aggregates += 1;
     }
   }
 
   console.log(
-    `Usage aggregation complete. subscriptions=${subscriptions.length} aggregates=${aggregates}`
+    `Usage aggregation complete. subscriptions=${subscriptions.length} aggregates=${aggregates}`,
   );
 }
 

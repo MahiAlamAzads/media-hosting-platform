@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { Feedback, LoadingBlock } from "@/components/feedback";
 import { PageHeader } from "@/components/page-header";
 import { apiRequest } from "@/lib/api";
-import {
-  metricLabels,
-  type UsageMetricName
-} from "@/lib/billing-format";
+import { metricLabels, type UsageMetricName } from "@/lib/billing-format";
 
 type UsageAlert = {
   id: string;
@@ -45,11 +42,13 @@ export default function UsageAlertsPage() {
   async function load(): Promise<void> {
     try {
       const response = await apiRequest<{ data: UsageAlert[] }>(
-        "/api/v1/billing/alerts"
+        "/api/v1/billing/alerts",
       );
       setAlerts(response.data);
     } catch (value) {
-      setError(value instanceof Error ? value.message : "Unable to load alerts.");
+      setError(
+        value instanceof Error ? value.message : "Unable to load alerts.",
+      );
     }
   }
 
@@ -63,14 +62,14 @@ export default function UsageAlertsPage() {
 
     try {
       await apiRequest(`/api/v1/billing/alerts/${alertId}`, {
-        method: "PATCH"
+        method: "PATCH",
       });
       await load();
     } catch (value) {
       setError(
         value instanceof Error
           ? value.message
-          : "Unable to acknowledge the alert."
+          : "Unable to acknowledge the alert.",
       );
     } finally {
       setBusyId("");
@@ -83,7 +82,10 @@ export default function UsageAlertsPage() {
         title="Usage alerts"
         subtitle="70%, 80%, 90% and 100% limit notifications with email delivery history."
       >
-        <a className="btn btn-outline-secondary" href="/dashboard/billing/usage">
+        <a
+          className="btn btn-outline-secondary"
+          href="/dashboard/billing/usage"
+        >
           Usage and limits
         </a>
         <a className="btn btn-primary" href="/dashboard/billing/plans">
@@ -120,7 +122,7 @@ export default function UsageAlertsPage() {
                 </tr>
               </thead>
               <tbody>
-                {alerts.map(alert => (
+                {alerts.map((alert) => (
                   <tr key={alert.id}>
                     <td>
                       <strong>{metricLabels[alert.metric]}</strong>
@@ -130,13 +132,17 @@ export default function UsageAlertsPage() {
                       </div>
                     </td>
                     <td>
-                      <span className={`badge ${thresholdBadge(alert.threshold)}`}>
+                      <span
+                        className={`badge ${thresholdBadge(alert.threshold)}`}
+                      >
                         {alert.threshold}%
                       </span>
                     </td>
                     <td>{new Date(alert.triggeredAt).toLocaleString()}</td>
                     <td>
-                      <span className={`badge ${emailBadge(alert.emailStatus)}`}>
+                      <span
+                        className={`badge ${emailBadge(alert.emailStatus)}`}
+                      >
                         {alert.emailStatus}
                       </span>
                       {alert.emailRecipient && (

@@ -9,7 +9,7 @@ export default defineConfig({
     restoreMocks: true,
     mockReset: true,
     sequence: {
-      concurrent: false
+      concurrent: false,
     },
     coverage: {
       provider: "v8",
@@ -17,19 +17,15 @@ export default defineConfig({
       include: [
         "src/modules/**/*.ts",
         "src/shared/**/*.ts",
-        "src/infrastructure/**/*.ts"
+        "src/infrastructure/**/*.ts",
       ],
-      exclude: [
-        "tests/**",
-        "src/server.ts",
-        "src/types.d.ts"
-      ],
+      exclude: ["tests/**", "src/server.ts", "src/types.d.ts"],
       thresholds: {
         lines: 70,
         functions: 70,
         branches: 60,
-        statements: 70
-      }
-    }
-  }
+        statements: 70,
+      },
+    },
+  },
 });

@@ -4,9 +4,13 @@ import { PricingHttpRepository } from "./pricing.facade.repository.js";
 import { PricingHttpRoute } from "./pricing.facade.route.js";
 import { PricingHttpService } from "./pricing.facade.service.js";
 import { PricingHttpValidation } from "./pricing.facade.validation.js";
-const repository=new PricingHttpRepository();
-const validation=new PricingHttpValidation();
-const service=new PricingHttpService(repository,validation);
-const controller=new PricingHttpController(service);
-const route=new PricingHttpRoute(controller);
-export const pricingModule: ApiModuleDescriptor={name:"pricing",mountPath:"/api/v1/pricing",router:route.router};
+const repository = new PricingHttpRepository();
+const validation = new PricingHttpValidation();
+const service = new PricingHttpService(repository, validation);
+const controller = new PricingHttpController(service);
+const route = new PricingHttpRoute(controller);
+export const pricingModule: ApiModuleDescriptor = {
+  name: "pricing",
+  mountPath: "/api/v1/pricing",
+  router: route.router,
+};

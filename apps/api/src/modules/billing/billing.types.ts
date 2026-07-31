@@ -11,22 +11,16 @@ export const usageMetrics = [
   "WORKSPACE_MEMBERS",
   "API_KEYS",
   "CONCURRENT_JOBS",
-  "MAX_FILE_SIZE_BYTES"
+  "MAX_FILE_SIZE_BYTES",
 ] as const;
 
 export type UsageMetricName = (typeof usageMetrics)[number];
 export type BillingCurrencyName = "BDT" | "USD";
 export type BillingIntervalName = "MONTHLY" | "YEARLY";
 export type RevenueModelName =
-  | "SUBSCRIPTION"
-  | "PREPAID_PAYG"
-  | "ENTERPRISE_CUSTOM";
+  "SUBSCRIPTION" | "PREPAID_PAYG" | "ENTERPRISE_CUSTOM";
 export type SubscriptionTermName =
-  | "FREE"
-  | "THREE_MONTHS"
-  | "SIX_MONTHS"
-  | "ONE_YEAR"
-  | "ENTERPRISE_CUSTOM";
+  "FREE" | "THREE_MONTHS" | "SIX_MONTHS" | "ONE_YEAR" | "ENTERPRISE_CUSTOM";
 
 export type EntitlementValue = {
   metric: UsageMetricName;

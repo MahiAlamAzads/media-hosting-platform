@@ -4,9 +4,13 @@ import { RevenueHttpRepository } from "./revenue.facade.repository.js";
 import { RevenueHttpRoute } from "./revenue.facade.route.js";
 import { RevenueHttpService } from "./revenue.facade.service.js";
 import { RevenueHttpValidation } from "./revenue.facade.validation.js";
-const repository=new RevenueHttpRepository();
-const validation=new RevenueHttpValidation();
-const service=new RevenueHttpService(repository,validation);
-const controller=new RevenueHttpController(service);
-const route=new RevenueHttpRoute(controller);
-export const revenueModule: ApiModuleDescriptor={name:"revenue",mountPath:"/api/v1/billing",router:route.router};
+const repository = new RevenueHttpRepository();
+const validation = new RevenueHttpValidation();
+const service = new RevenueHttpService(repository, validation);
+const controller = new RevenueHttpController(service);
+const route = new RevenueHttpRoute(controller);
+export const revenueModule: ApiModuleDescriptor = {
+  name: "revenue",
+  mountPath: "/api/v1/billing",
+  router: route.router,
+};

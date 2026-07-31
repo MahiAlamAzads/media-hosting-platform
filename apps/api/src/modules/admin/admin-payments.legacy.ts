@@ -2,14 +2,11 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@media/database";
 import { env } from "../../config/env.js";
-import {
-  authenticate,
-  requireUser
-} from "../../middleware/authenticate.js";
+import { authenticate, requireUser } from "../../middleware/authenticate.js";
 import { requirePlatformAdmin } from "../../middleware/platform-admin.js";
 import {
   createStorageReadStream,
-  storageFileSize
+  storageFileSize,
 } from "../../infrastructure/storage.js";
 import { AppError, asyncHandler } from "../../shared/http.js";
 import { applyPaidPayment } from "../payments/payment.service.js";
@@ -25,25 +22,30 @@ const channelSchema = z.enum([
   "ROCKET",
   "WISE",
   "PAYONEER",
-  "OTHER"
+  "OTHER",
 ]);
 
 router.get(
   "/payments",
   asyncHandler(async (req, res) => {
-    const status = z.enum([
-      "PENDING",
-      "PROCESSING",
-      "UNDER_REVIEW",
-      "PAID",
-      "FAILED",
-      "CANCELLED",
-      "REJECTED",
-      "EXPIRED",
-      "REFUNDED"
-    ]).optional().parse(req.query.status);
-    const method = z.enum(["MANUAL", "SSLCOMMERZ"])
-      .optional().parse(req.query.method);
+    const status = z
+      .enum([
+        "PENDING",
+        "PROCESSING",
+        "UNDER_REVIEW",
+        "PAID",
+        "FAILED",
+        "CANCELLED",
+        "REJECTED",
+        "EXPIRED",
+        "REFUNDED",
+      ])
+      .optional()
+      .parse(req.query.status);
+    const method = z
+      .enum(["MANUAL", "SSLCOMMERZ"])
+      .optional()
+      .parse(req.query.method);
 
     const payments = await prisma.paymentAttempt.findMany({
       where: { status, method },
@@ -54,15 +56,15 @@ router.get(
           include: {
             workspace: { select: { name: true, slug: true } },
             planVersion: { include: { plan: true } },
-            requestedBy: { select: { name: true, email: true } }
-          }
+            requestedBy: { select: { name: true, email: true } },
+          },
         },
-        manualSubmission: { include: { account: true } }
-      }
+        manualSubmission: { include: { account: true } },
+      },
     });
 
     res.json({
-      data: payments.map(payment => ({
+      data: payments.map((payment) => ({
         id: payment.id,
         method: payment.method,
         status: payment.status,
@@ -92,10 +94,10 @@ router.get(
             plan: {
               id: payment.invoice.planVersion.plan.id,
               code: payment.invoice.planVersion.plan.code,
-              name: payment.invoice.planVersion.plan.name
-            }
+              name: payment.invoice.planVersion.plan.name,
+            },
           },
-          requestedBy: payment.invoice.requestedBy
+          requestedBy: payment.invoice.requestedBy,
         },
         manualSubmission: payment.manualSubmission
           ? {
@@ -106,61 +108,53 @@ router.get(
               senderName: payment.manualSubmission.senderName,
               paidAt: payment.manualSubmission.paidAt,
               note: payment.manualSubmission.note,
-              proofFilename:
-                payment.manualSubmission.proofFilename,
-              proofContentType:
-                payment.manualSubmission.proofContentType,
+              proofFilename: payment.manualSubmission.proofFilename,
+              proofContentType: payment.manualSubmission.proofContentType,
               proofSizeBytes:
                 payment.manualSubmission.proofSizeBytes?.toString() ?? null,
-              hasProof: Boolean(
-                payment.manualSubmission.proofStorageKey
-              ),
+              hasProof: Boolean(payment.manualSubmission.proofStorageKey),
               reviewedAt: payment.manualSubmission.reviewedAt,
-              rejectionReason:
-                payment.manualSubmission.rejectionReason,
+              rejectionReason: payment.manualSubmission.rejectionReason,
               account: {
                 id: payment.manualSubmission.account.id,
                 currency: payment.manualSubmission.account.currency,
                 channel: payment.manualSubmission.account.channel,
                 label: payment.manualSubmission.account.label,
-                accountName:
-                  payment.manualSubmission.account.accountName,
-                accountNumber:
-                  payment.manualSubmission.account.accountNumber,
+                accountName: payment.manualSubmission.account.accountName,
+                accountNumber: payment.manualSubmission.account.accountNumber,
                 bankName: payment.manualSubmission.account.bankName,
-                branchName:
-                  payment.manualSubmission.account.branchName,
-                routingNumber:
-                  payment.manualSubmission.account.routingNumber,
-                instructions:
-                  payment.manualSubmission.account.instructions
-              }
+                branchName: payment.manualSubmission.account.branchName,
+                routingNumber: payment.manualSubmission.account.routingNumber,
+                instructions: payment.manualSubmission.account.instructions,
+              },
             }
-          : null
+          : null,
       })),
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.post(
   "/payments/:paymentId/approve",
   asyncHandler(async (req, res) => {
     const paymentId = idSchema.parse(req.params.paymentId);
-    const input = z.object({
-      note: z.string().trim().max(1000).optional()
-    }).parse(req.body);
+    const input = z
+      .object({
+        note: z.string().trim().max(1000).optional(),
+      })
+      .parse(req.body);
 
     const payment = await prisma.paymentAttempt.findUnique({
       where: { id: paymentId },
-      include: { manualSubmission: true }
+      include: { manualSubmission: true },
     });
 
     if (!payment || payment.status !== "UNDER_REVIEW") {
       throw new AppError(
         409,
         "PAYMENT_NOT_REVIEWABLE",
-        "Payment is not awaiting review."
+        "Payment is not awaiting review.",
       );
     }
 
@@ -172,7 +166,7 @@ router.post(
       throw new AppError(
         409,
         "PAYMENT_PROOF_REQUIRED",
-        "Manual payment proof is required before approval."
+        "Manual payment proof is required before approval.",
       );
     }
 
@@ -184,7 +178,7 @@ router.post(
         input.note ??
         (payment.method === "MANUAL"
           ? "Manual payment approved by platform administrator."
-          : "Risk-reviewed SSLCOMMERZ payment approved by platform administrator.")
+          : "Risk-reviewed SSLCOMMERZ payment approved by platform administrator."),
     });
 
     if (payment.manualSubmission) {
@@ -193,8 +187,8 @@ router.post(
         data: {
           reviewedById: req.auth!.userId,
           reviewedAt: new Date(),
-          rejectionReason: null
-        }
+          rejectionReason: null,
+        },
       });
     }
 
@@ -202,42 +196,44 @@ router.post(
       data: {
         paymentId: payment.id,
         invoiceId: result.invoice.id,
-        status: "PAID"
+        status: "PAID",
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.post(
   "/payments/:paymentId/reject",
   asyncHandler(async (req, res) => {
     const paymentId = idSchema.parse(req.params.paymentId);
-    const input = z.object({
-      reason: z.string().trim().min(3).max(1000)
-    }).parse(req.body);
+    const input = z
+      .object({
+        reason: z.string().trim().min(3).max(1000),
+      })
+      .parse(req.body);
 
     const payment = await prisma.paymentAttempt.findUnique({
       where: { id: paymentId },
-      include: { manualSubmission: true, invoice: true }
+      include: { manualSubmission: true, invoice: true },
     });
 
     if (!payment || !new Set(["PENDING", "UNDER_REVIEW"]).has(payment.status)) {
       throw new AppError(
         409,
         "PAYMENT_NOT_REVIEWABLE",
-        "Payment is not awaiting review."
+        "Payment is not awaiting review.",
       );
     }
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       await tx.paymentAttempt.update({
         where: { id: payment.id },
         data: {
           status: "REJECTED",
           failureReason: input.reason,
-          completedAt: new Date()
-        }
+          completedAt: new Date(),
+        },
       });
 
       if (payment.manualSubmission) {
@@ -246,8 +242,8 @@ router.post(
           data: {
             reviewedById: req.auth!.userId,
             reviewedAt: new Date(),
-            rejectionReason: input.reason
-          }
+            rejectionReason: input.reason,
+          },
         });
       }
 
@@ -259,13 +255,13 @@ router.post(
           entityType: "PaymentAttempt",
           entityId: payment.id,
           metadata: { reason: input.reason, method: payment.method },
-          ipAddress: req.ip
-        }
+          ipAddress: req.ip,
+        },
       });
     });
 
     res.status(204).send();
-  })
+  }),
 );
 
 router.get(
@@ -273,14 +269,14 @@ router.get(
   asyncHandler(async (req, res) => {
     const paymentId = idSchema.parse(req.params.paymentId);
     const submission = await prisma.manualPaymentSubmission.findUnique({
-      where: { paymentAttemptId: paymentId }
+      where: { paymentAttemptId: paymentId },
     });
 
     if (!submission?.proofStorageKey || !submission.proofContentType) {
       throw new AppError(
         404,
         "PAYMENT_PROOF_NOT_FOUND",
-        "Payment proof was not found."
+        "Payment proof was not found.",
       );
     }
 
@@ -290,89 +286,101 @@ router.get(
     res.setHeader("content-length", size.toString());
     res.setHeader(
       "content-disposition",
-      `inline; filename="${(submission.proofFilename ?? "payment-proof").replaceAll('"', "_")}"`
+      `inline; filename="${(submission.proofFilename ?? "payment-proof").replaceAll('"', "_")}"`,
     );
 
     const stream = createStorageReadStream(submission.proofStorageKey);
-    stream.on("error", error => {
+    stream.on("error", (error) => {
       req.log.error({ err: error }, "payment proof stream failed");
       if (!res.headersSent) {
         res.status(500).json({
           error: {
             code: "PAYMENT_PROOF_STREAM_FAILED",
             message: "Payment proof could not be read.",
-            requestId: req.id
-          }
+            requestId: req.id,
+          },
         });
         return;
       }
       res.destroy(error instanceof Error ? error : undefined);
     });
     stream.pipe(res);
-  })
+  }),
 );
 
 router.get(
   "/payment-accounts",
   asyncHandler(async (req, res) => {
     const accounts = await prisma.manualPaymentAccount.findMany({
-      orderBy: [{ currency: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }]
+      orderBy: [
+        { currency: "asc" },
+        { sortOrder: "asc" },
+        { createdAt: "asc" },
+      ],
     });
     res.json({ data: accounts, meta: { requestId: req.id } });
-  })
+  }),
 );
 
 router.post(
   "/payment-accounts",
   asyncHandler(async (req, res) => {
-    const input = z.object({
-      currency: z.enum(["BDT", "USD"]),
-      channel: channelSchema,
-      label: z.string().trim().min(2).max(120),
-      accountName: z.string().trim().min(2).max(160),
-      accountNumber: z.string().trim().min(2).max(160),
-      bankName: z.string().trim().max(160).nullable().optional(),
-      branchName: z.string().trim().max(160).nullable().optional(),
-      routingNumber: z.string().trim().max(80).nullable().optional(),
-      instructions: z.string().trim().max(1000).nullable().optional(),
-      sortOrder: z.number().int().min(0).max(10000).default(0),
-      isActive: z.boolean().default(true)
-    }).parse(req.body);
+    const input = z
+      .object({
+        currency: z.enum(["BDT", "USD"]),
+        channel: channelSchema,
+        label: z.string().trim().min(2).max(120),
+        accountName: z.string().trim().min(2).max(160),
+        accountNumber: z.string().trim().min(2).max(160),
+        bankName: z.string().trim().max(160).nullable().optional(),
+        branchName: z.string().trim().max(160).nullable().optional(),
+        routingNumber: z.string().trim().max(80).nullable().optional(),
+        instructions: z.string().trim().max(1000).nullable().optional(),
+        sortOrder: z.number().int().min(0).max(10000).default(0),
+        isActive: z.boolean().default(true),
+      })
+      .parse(req.body);
 
     const account = await prisma.manualPaymentAccount.create({ data: input });
     res.status(201).json({ data: account, meta: { requestId: req.id } });
-  })
+  }),
 );
 
 router.patch(
   "/payment-accounts/:accountId",
   asyncHandler(async (req, res) => {
     const accountId = idSchema.parse(req.params.accountId);
-    const input = z.object({
-      currency: z.enum(["BDT", "USD"]).optional(),
-      channel: channelSchema.optional(),
-      label: z.string().trim().min(2).max(120).optional(),
-      accountName: z.string().trim().min(2).max(160).optional(),
-      accountNumber: z.string().trim().min(2).max(160).optional(),
-      bankName: z.string().trim().max(160).nullable().optional(),
-      branchName: z.string().trim().max(160).nullable().optional(),
-      routingNumber: z.string().trim().max(80).nullable().optional(),
-      instructions: z.string().trim().max(1000).nullable().optional(),
-      sortOrder: z.number().int().min(0).max(10000).optional(),
-      isActive: z.boolean().optional()
-    }).parse(req.body);
+    const input = z
+      .object({
+        currency: z.enum(["BDT", "USD"]).optional(),
+        channel: channelSchema.optional(),
+        label: z.string().trim().min(2).max(120).optional(),
+        accountName: z.string().trim().min(2).max(160).optional(),
+        accountNumber: z.string().trim().min(2).max(160).optional(),
+        bankName: z.string().trim().max(160).nullable().optional(),
+        branchName: z.string().trim().max(160).nullable().optional(),
+        routingNumber: z.string().trim().max(80).nullable().optional(),
+        instructions: z.string().trim().max(1000).nullable().optional(),
+        sortOrder: z.number().int().min(0).max(10000).optional(),
+        isActive: z.boolean().optional(),
+      })
+      .parse(req.body);
 
     const result = await prisma.manualPaymentAccount.updateMany({
       where: { id: accountId },
-      data: input
+      data: input,
     });
 
     if (result.count !== 1) {
-      throw new AppError(404, "PAYMENT_ACCOUNT_NOT_FOUND", "Payment account was not found.");
+      throw new AppError(
+        404,
+        "PAYMENT_ACCOUNT_NOT_FOUND",
+        "Payment account was not found.",
+      );
     }
 
     res.status(204).send();
-  })
+  }),
 );
 
 export default router;

@@ -9,11 +9,11 @@ import {
   removeStorageFile,
   storageFileChecksum,
   storageFileSize,
-  writeStorageFile
+  writeStorageFile,
 } from "../../infrastructure/storage.js";
 import {
   declaredTypeMatchesDetectedType,
-  inspectStoredMedia
+  inspectStoredMedia,
 } from "../../shared/media-inspection.js";
 import { AppError, asyncHandler } from "../../shared/http.js";
 import { buildMediaUrls } from "../../shared/media-url.js";
@@ -23,7 +23,7 @@ import { scheduleUsageAlertEvaluation } from "../billing/usage-alert.service.js"
 import { invalidatePublicMediaCache } from "../public/public-media-cache.js";
 import {
   enqueueImageOptimization,
-  imageOptimizationResponse
+  imageOptimizationResponse,
 } from "../processing/image-optimization-scheduler.js";
 
 const router = Router();
@@ -34,35 +34,38 @@ const PLATFORM_MAX_FILE_BYTES = 20 * 1024 * 1024 * 1024;
 const routeIdSchema = z.string().cuid();
 const chunkIndexSchema = z.coerce.number().int().nonnegative();
 
-const initSchema = z.object({
-  filename: z.string().trim().min(1).max(255).optional(),
-  originalFilename: z.string().trim().min(1).max(255).optional(),
-  contentType: z.string().trim().min(1).max(150),
-  sizeBytes: z.coerce.number().int().positive().max(PLATFORM_MAX_FILE_BYTES),
-  folderId: z.string().cuid().nullable().optional(),
-  visibility: z.enum(["PRIVATE", "PUBLIC"]).optional(),
-  checksumSha256: z.string().regex(/^[a-f0-9]{64}$/i).optional()
-}).superRefine((value, context) => {
-  if (!value.filename && !value.originalFilename) {
-    context.addIssue({
-      code: "custom",
-      path: ["filename"],
-      message: "filename is required."
-    });
-  }
-}).transform(value => ({
-  ...value,
-  filename: value.filename ?? value.originalFilename!
-}));
+const initSchema = z
+  .object({
+    filename: z.string().trim().min(1).max(255).optional(),
+    originalFilename: z.string().trim().min(1).max(255).optional(),
+    contentType: z.string().trim().min(1).max(150),
+    sizeBytes: z.coerce.number().int().positive().max(PLATFORM_MAX_FILE_BYTES),
+    folderId: z.string().cuid().nullable().optional(),
+    visibility: z.enum(["PRIVATE", "PUBLIC"]).optional(),
+    checksumSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/i)
+      .optional(),
+  })
+  .superRefine((value, context) => {
+    if (!value.filename && !value.originalFilename) {
+      context.addIssue({
+        code: "custom",
+        path: ["filename"],
+        message: "filename is required.",
+      });
+    }
+  })
+  .transform((value) => ({
+    ...value,
+    filename: value.filename ?? value.originalFilename!,
+  }));
 
 function mediaTypeFromContentType(contentType: string) {
   if (contentType.startsWith("image/")) return "IMAGE" as const;
   if (contentType.startsWith("video/")) return "VIDEO" as const;
   if (contentType.startsWith("audio/")) return "AUDIO" as const;
-  if (
-    contentType === "application/pdf" ||
-    contentType.startsWith("text/")
-  ) {
+  if (contentType === "application/pdf" || contentType.startsWith("text/")) {
     return "DOCUMENT" as const;
   }
   return "OTHER" as const;
@@ -92,7 +95,7 @@ router.post(
             workspaceId: auth.workspaceId,
             checksumSha256: input.checksumSha256.toLowerCase(),
             status: "READY",
-            deletedAt: null
+            deletedAt: null,
           },
           select: {
             id: true,
@@ -103,9 +106,9 @@ router.post(
             detectedMediaType: true,
             variants: {
               where: { status: "READY" },
-              select: { kind: true }
-            }
-          }
+              select: { kind: true },
+            },
+          },
         })
       : null;
 
@@ -124,11 +127,11 @@ router.post(
               visibility: duplicate.visibility,
               status: duplicate.status,
               detectedMediaType: duplicate.detectedMediaType,
-              readyVariants: duplicate.variants.map(variant => variant.kind)
-            })
+              readyVariants: duplicate.variants.map((variant) => variant.kind),
+            }),
           },
-          requestId: req.id
-        }
+          requestId: req.id,
+        },
       });
       return;
     }
@@ -136,36 +139,28 @@ router.post(
     await ensureWorkspaceStorage(auth.workspaceId);
 
     const chunkSizeBytes = DEFAULT_CHUNK_BYTES;
-    const expectedChunks = Math.ceil(
-      input.sizeBytes / chunkSizeBytes
-    );
-    const expiresAt = new Date(
-      Date.now() + 24 * 60 * 60 * 1000
-    );
+    const expectedChunks = Math.ceil(input.sizeBytes / chunkSizeBytes);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const paygOperationKeyPrefix = `upload:${req.id}`;
 
-    const result = await prisma.$transaction(async tx => {
+    const result = await prisma.$transaction(async (tx) => {
       const quota = await assertUploadAllowedInTransaction(tx, {
         workspaceId: auth.workspaceId,
         expectedBytes,
-        operationKeyBase: paygOperationKeyPrefix
+        operationKeyBase: paygOperationKeyPrefix,
       });
 
       if (input.folderId) {
         const folder = await tx.folder.findFirst({
           where: {
             id: input.folderId,
-            workspaceId: auth.workspaceId
+            workspaceId: auth.workspaceId,
           },
-          select: { id: true }
+          select: { id: true },
         });
 
         if (!folder) {
-          throw new AppError(
-            404,
-            "FOLDER_NOT_FOUND",
-            "Folder was not found."
-          );
+          throw new AppError(404, "FOLDER_NOT_FOUND", "Folder was not found.");
         }
       }
 
@@ -175,26 +170,21 @@ router.post(
           folderId: input.folderId ?? null,
           createdById: auth.userId,
           originalFilename: input.filename,
-          storageKey:
-            `tenants/${auth.workspaceId}/originals/pending-${Date.now()}`,
+          storageKey: `tenants/${auth.workspaceId}/originals/pending-${Date.now()}`,
           contentType: input.contentType,
-          detectedMediaType: mediaTypeFromContentType(
-            input.contentType
-          ),
+          detectedMediaType: mediaTypeFromContentType(input.contentType),
           visibility,
           sizeBytes: expectedBytes,
-          checksumSha256:
-            input.checksumSha256?.toLowerCase(),
-          status: "UPLOADING"
-        }
+          checksumSha256: input.checksumSha256?.toLowerCase(),
+          status: "UPLOADING",
+        },
       });
 
-      const storageKey =
-        `tenants/${auth.workspaceId}/originals/${asset.id}/${safeFilename(input.filename)}`;
+      const storageKey = `tenants/${auth.workspaceId}/originals/${asset.id}/${safeFilename(input.filename)}`;
 
       await tx.mediaAsset.update({
         where: { id: asset.id },
-        data: { storageKey }
+        data: { storageKey },
       });
 
       const session = await tx.uploadSession.create({
@@ -205,11 +195,10 @@ router.post(
           expectedBytes,
           chunkSizeBytes,
           expectedChunks,
-          tempStorageKey:
-            `tenants/${auth.workspaceId}/temp/${asset.id}`,
+          tempStorageKey: `tenants/${auth.workspaceId}/temp/${asset.id}`,
           paygOperationKeyPrefix,
-          expiresAt
-        }
+          expiresAt,
+        },
       });
 
       await tx.quotaReservation.createMany({
@@ -220,7 +209,7 @@ router.post(
             quantity: expectedBytes,
             sourceType: "UPLOAD_SESSION",
             sourceId: session.id,
-            expiresAt
+            expiresAt,
           },
           {
             workspaceId: auth.workspaceId,
@@ -228,7 +217,7 @@ router.post(
             quantity: expectedBytes,
             sourceType: "UPLOAD_SESSION",
             sourceId: session.id,
-            expiresAt
+            expiresAt,
           },
           {
             workspaceId: auth.workspaceId,
@@ -236,24 +225,24 @@ router.post(
             quantity: 1n,
             sourceType: "UPLOAD_SESSION",
             sourceId: session.id,
-            expiresAt
-          }
-        ]
+            expiresAt,
+          },
+        ],
       });
 
       await tx.workspace.update({
         where: { id: auth.workspaceId },
         data: {
           storageReservedBytes: {
-            increment: expectedBytes
-          }
-        }
+            increment: expectedBytes,
+          },
+        },
       });
 
       return {
         assetId: asset.id,
         session,
-        storageLimitBytes: quota.storageLimitBytes
+        storageLimitBytes: quota.storageLimitBytes,
       };
     });
 
@@ -265,35 +254,32 @@ router.post(
         expectedChunks,
         visibility,
         expiresAt: result.session.expiresAt,
-        storageLimitBytes:
-          result.storageLimitBytes.toString()
+        storageLimitBytes: result.storageLimitBytes.toString(),
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.get(
   "/:uploadId",
   asyncHandler(async (req, res) => {
     const auth = req.auth!;
-    const uploadId = routeIdSchema.parse(
-      req.params.uploadId
-    );
+    const uploadId = routeIdSchema.parse(req.params.uploadId);
 
     const session = await prisma.uploadSession.findFirst({
       where: {
         id: uploadId,
         workspaceId: auth.workspaceId,
-        userId: auth.userId
-      }
+        userId: auth.userId,
+      },
     });
 
     if (!session) {
       throw new AppError(
         404,
         "UPLOAD_NOT_FOUND",
-        "Upload session was not found."
+        "Upload session was not found.",
       );
     }
 
@@ -302,8 +288,8 @@ router.get(
       orderBy: { chunkIndex: "asc" },
       select: {
         chunkIndex: true,
-        sizeBytes: true
-      }
+        sizeBytes: true,
+      },
     });
 
     res.json({
@@ -315,69 +301,55 @@ router.get(
         chunkSizeBytes: session.chunkSizeBytes,
         expectedChunks: session.expectedChunks,
         receivedChunks: session.receivedChunks,
-        uploadedChunkIndexes: chunks.map(
-          chunk => chunk.chunkIndex
-        ),
-        expiresAt: session.expiresAt
+        uploadedChunkIndexes: chunks.map((chunk) => chunk.chunkIndex),
+        expiresAt: session.expiresAt,
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.put(
   "/:uploadId/chunks/:chunkIndex",
   express.raw({
     type: "application/octet-stream",
-    limit: MAX_CHUNK_BYTES
+    limit: MAX_CHUNK_BYTES,
   }),
   asyncHandler(async (req, res) => {
     const auth = req.auth!;
-    const uploadId = routeIdSchema.parse(
-      req.params.uploadId
-    );
-    const chunkIndex = chunkIndexSchema.parse(
-      req.params.chunkIndex
-    );
+    const uploadId = routeIdSchema.parse(req.params.uploadId);
+    const chunkIndex = chunkIndexSchema.parse(req.params.chunkIndex);
     const body = req.body;
 
     if (!Buffer.isBuffer(body) || body.length === 0) {
-      throw new AppError(
-        400,
-        "EMPTY_CHUNK",
-        "Chunk body is empty."
-      );
+      throw new AppError(400, "EMPTY_CHUNK", "Chunk body is empty.");
     }
 
     const session = await prisma.uploadSession.findFirst({
       where: {
         id: uploadId,
         workspaceId: auth.workspaceId,
-        userId: auth.userId
-      }
+        userId: auth.userId,
+      },
     });
 
     if (!session || session.status !== "ACTIVE") {
       throw new AppError(
         404,
         "UPLOAD_NOT_ACTIVE",
-        "Upload session is not active."
+        "Upload session is not active.",
       );
     }
 
     if (session.expiresAt <= new Date()) {
-      throw new AppError(
-        410,
-        "UPLOAD_EXPIRED",
-        "Upload session has expired."
-      );
+      throw new AppError(410, "UPLOAD_EXPIRED", "Upload session has expired.");
     }
 
     if (chunkIndex >= session.expectedChunks) {
       throw new AppError(
         400,
         "INVALID_CHUNK_INDEX",
-        "Chunk index is outside the expected range."
+        "Chunk index is outside the expected range.",
       );
     }
 
@@ -385,8 +357,8 @@ router.put(
       chunkIndex === session.expectedChunks - 1
         ? Number(
             session.expectedBytes -
-            BigInt(session.chunkSizeBytes) *
-              BigInt(session.expectedChunks - 1)
+              BigInt(session.chunkSizeBytes) *
+                BigInt(session.expectedChunks - 1),
           )
         : session.chunkSizeBytes;
 
@@ -394,7 +366,7 @@ router.put(
       throw new AppError(
         409,
         "CHUNK_SIZE_MISMATCH",
-        "Chunk size does not match the upload session."
+        "Chunk size does not match the upload session.",
       );
     }
 
@@ -402,9 +374,9 @@ router.put(
       where: {
         uploadSessionId_chunkIndex: {
           uploadSessionId: session.id,
-          chunkIndex
-        }
-      }
+          chunkIndex,
+        },
+      },
     });
 
     if (existing) {
@@ -412,18 +384,15 @@ router.put(
         data: {
           accepted: true,
           duplicate: true,
-          chunkIndex
+          chunkIndex,
         },
-        meta: { requestId: req.id }
+        meta: { requestId: req.id },
       });
       return;
     }
 
-    const checksumSha256 = createHash("sha256")
-      .update(body)
-      .digest("hex");
-    const chunkStorageKey =
-      `${session.tempStorageKey}/chunk-${String(chunkIndex).padStart(8, "0")}`;
+    const checksumSha256 = createHash("sha256").update(body).digest("hex");
+    const chunkStorageKey = `${session.tempStorageKey}/chunk-${String(chunkIndex).padStart(8, "0")}`;
 
     await writeStorageFile(chunkStorageKey, body);
 
@@ -435,18 +404,18 @@ router.put(
             chunkIndex,
             sizeBytes: body.length,
             checksumSha256,
-            storageKey: chunkStorageKey
-          }
+            storageKey: chunkStorageKey,
+          },
         }),
         prisma.uploadSession.update({
           where: { id: session.id },
           data: {
             receivedBytes: {
-              increment: BigInt(body.length)
+              increment: BigInt(body.length),
             },
-            receivedChunks: { increment: 1 }
-          }
-        })
+            receivedChunks: { increment: 1 },
+          },
+        }),
       ]);
     } catch (error) {
       await removeStorageFile(chunkStorageKey);
@@ -459,55 +428,49 @@ router.put(
         duplicate: false,
         chunkIndex,
         sizeBytes: body.length,
-        checksumSha256
+        checksumSha256,
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 router.post(
   "/:uploadId/complete",
   asyncHandler(async (req, res) => {
     const auth = req.auth!;
-    const uploadId = routeIdSchema.parse(
-      req.params.uploadId
-    );
+    const uploadId = routeIdSchema.parse(req.params.uploadId);
 
     const session = await prisma.uploadSession.findFirst({
       where: {
         id: uploadId,
         workspaceId: auth.workspaceId,
-        userId: auth.userId
-      }
+        userId: auth.userId,
+      },
     });
 
     if (!session || session.status !== "ACTIVE") {
       throw new AppError(
         404,
         "UPLOAD_NOT_ACTIVE",
-        "Upload session is not active."
+        "Upload session is not active.",
       );
     }
 
     const mediaAsset = await prisma.mediaAsset.findFirst({
       where: {
         id: session.mediaAssetId,
-        workspaceId: auth.workspaceId
-      }
+        workspaceId: auth.workspaceId,
+      },
     });
 
     if (!mediaAsset) {
-      throw new AppError(
-        404,
-        "MEDIA_NOT_FOUND",
-        "Media asset was not found."
-      );
+      throw new AppError(404, "MEDIA_NOT_FOUND", "Media asset was not found.");
     }
 
     const chunks = await prisma.uploadChunk.findMany({
       where: { uploadSessionId: session.id },
-      orderBy: { chunkIndex: "asc" }
+      orderBy: { chunkIndex: "asc" },
     });
 
     if (
@@ -518,59 +481,51 @@ router.post(
       throw new AppError(
         409,
         "UPLOAD_INCOMPLETE",
-        "Not all upload chunks have been received."
+        "Not all upload chunks have been received.",
       );
     }
 
-    if (
-      chunks.some(
-        (chunk, index) => chunk.chunkIndex !== index
-      )
-    ) {
+    if (chunks.some((chunk, index) => chunk.chunkIndex !== index)) {
       throw new AppError(
         409,
         "UPLOAD_CHUNK_GAP",
-        "One or more upload chunks are missing."
+        "One or more upload chunks are missing.",
       );
     }
 
     const claimed = await prisma.uploadSession.updateMany({
       where: {
         id: session.id,
-        status: "ACTIVE"
+        status: "ACTIVE",
       },
-      data: { status: "COMPLETING" }
+      data: { status: "COMPLETING" },
     });
 
     if (claimed.count !== 1) {
       throw new AppError(
         409,
         "UPLOAD_ALREADY_COMPLETING",
-        "Upload completion is already in progress."
+        "Upload completion is already in progress.",
       );
     }
 
     try {
       await concatenateStorageFiles(
-        chunks.map(chunk => chunk.storageKey),
-        mediaAsset.storageKey
+        chunks.map((chunk) => chunk.storageKey),
+        mediaAsset.storageKey,
       );
 
-      const actualBytes = await storageFileSize(
-        mediaAsset.storageKey
-      );
+      const actualBytes = await storageFileSize(mediaAsset.storageKey);
 
       if (actualBytes !== session.expectedBytes) {
         throw new AppError(
           409,
           "UPLOAD_SIZE_MISMATCH",
-          "Completed file size does not match."
+          "Completed file size does not match.",
         );
       }
 
-      const actualChecksum = await storageFileChecksum(
-        mediaAsset.storageKey
-      );
+      const actualChecksum = await storageFileChecksum(mediaAsset.storageKey);
 
       if (
         mediaAsset.checksumSha256 &&
@@ -579,41 +534,34 @@ router.post(
         throw new AppError(
           409,
           "UPLOAD_CHECKSUM_MISMATCH",
-          "Completed file checksum does not match."
+          "Completed file checksum does not match.",
         );
       }
 
-      const detected = await inspectStoredMedia(
-        mediaAsset.storageKey
-      );
+      const detected = await inspectStoredMedia(mediaAsset.storageKey);
 
-      if (
-        !declaredTypeMatchesDetectedType(
-          mediaAsset.contentType,
-          detected
-        )
-      ) {
+      if (!declaredTypeMatchesDetectedType(mediaAsset.contentType, detected)) {
         throw new AppError(
           415,
           "MEDIA_TYPE_MISMATCH",
-          "Uploaded file content does not match its declared content type."
+          "Uploaded file content does not match its declared content type.",
         );
       }
 
-      await prisma.$transaction(async tx => {
+      await prisma.$transaction(async (tx) => {
         await tx.mediaAsset.update({
           where: { id: mediaAsset.id },
           data: {
             status: "READY",
             checksumSha256: actualChecksum,
             detectedContentType: detected.contentType,
-            detectedMediaType: detected.mediaType
-          }
+            detectedMediaType: detected.mediaType,
+          },
         });
 
         await tx.uploadSession.update({
           where: { id: session.id },
-          data: { status: "COMPLETED" }
+          data: { status: "COMPLETED" },
         });
 
         await tx.$executeRaw`
@@ -630,52 +578,47 @@ router.post(
         await tx.quotaReservation.updateMany({
           where: {
             sourceId: session.id,
-            status: "ACTIVE"
+            status: "ACTIVE",
           },
           data: {
             status: "COMMITTED",
-            committedAt: new Date()
-          }
+            committedAt: new Date(),
+          },
         });
 
         await recordUsageInTransaction(tx, {
           workspaceId: auth.workspaceId,
           metric: "STORAGE_BYTES",
           quantity: session.expectedBytes,
-          idempotencyKey:
-            `upload:${session.id}:storage`,
-          paygOperationKey:
-            session.paygOperationKeyPrefix
-              ? `${session.paygOperationKeyPrefix}:storage`
-              : undefined,
+          idempotencyKey: `upload:${session.id}:storage`,
+          paygOperationKey: session.paygOperationKeyPrefix
+            ? `${session.paygOperationKeyPrefix}:storage`
+            : undefined,
           sourceType: "UPLOAD_SESSION",
           sourceId: session.id,
-          metadata: { assetId: mediaAsset.id }
+          metadata: { assetId: mediaAsset.id },
         });
 
         await recordUsageInTransaction(tx, {
           workspaceId: auth.workspaceId,
           metric: "UPLOAD_BYTES",
           quantity: session.expectedBytes,
-          idempotencyKey:
-            `upload:${session.id}:bytes`,
-          paygOperationKey:
-            session.paygOperationKeyPrefix
-              ? `${session.paygOperationKeyPrefix}:upload`
-              : undefined,
+          idempotencyKey: `upload:${session.id}:bytes`,
+          paygOperationKey: session.paygOperationKeyPrefix
+            ? `${session.paygOperationKeyPrefix}:upload`
+            : undefined,
           sourceType: "UPLOAD_SESSION",
           sourceId: session.id,
-          metadata: { assetId: mediaAsset.id }
+          metadata: { assetId: mediaAsset.id },
         });
 
         await recordUsageInTransaction(tx, {
           workspaceId: auth.workspaceId,
           metric: "ACTIVE_ASSETS",
           quantity: 1n,
-          idempotencyKey:
-            `asset:${mediaAsset.id}:created`,
+          idempotencyKey: `asset:${mediaAsset.id}:created`,
           sourceType: "MEDIA_ASSET",
-          sourceId: mediaAsset.id
+          sourceId: mediaAsset.id,
         });
 
         await tx.auditLog.create({
@@ -686,14 +629,12 @@ router.post(
             entityType: "MediaAsset",
             entityId: mediaAsset.id,
             metadata: {
-              originalFilename:
-                mediaAsset.originalFilename,
-              sizeBytes:
-                session.expectedBytes.toString(),
-              uploadId: session.id
+              originalFilename: mediaAsset.originalFilename,
+              sizeBytes: session.expectedBytes.toString(),
+              uploadId: session.id,
             },
-            ipAddress: req.ip
-          }
+            ipAddress: req.ip,
+          },
         });
       });
 
@@ -701,35 +642,34 @@ router.post(
       await invalidatePublicMediaCache(mediaAsset.id);
 
       const cleanupResults = await Promise.allSettled(
-        chunks.map(chunk =>
-          removeStorageFile(chunk.storageKey)
-        )
+        chunks.map((chunk) => removeStorageFile(chunk.storageKey)),
       );
 
       const cleanupFailures = cleanupResults.filter(
-        result => result.status === "rejected"
+        (result) => result.status === "rejected",
       ).length;
 
       if (cleanupFailures > 0) {
         req.log.warn(
           { uploadId: session.id, cleanupFailures },
-          "upload completed but one or more temporary chunks could not be removed"
+          "upload completed but one or more temporary chunks could not be removed",
         );
       }
 
-      const optimizationQueued = detected.mediaType === "IMAGE"
-        ? enqueueImageOptimization(mediaAsset.id)
-        : false;
+      const optimizationQueued =
+        detected.mediaType === "IMAGE"
+          ? enqueueImageOptimization(mediaAsset.id)
+          : false;
       const optimization = imageOptimizationResponse(
         detected.mediaType,
-        optimizationQueued
+        optimizationQueued,
       );
       const urls = buildMediaUrls({
         assetId: mediaAsset.id,
         visibility: mediaAsset.visibility,
         status: "READY",
         detectedMediaType: detected.mediaType,
-        readyVariants: []
+        readyVariants: [],
       });
 
       res.json({
@@ -742,9 +682,9 @@ router.post(
           checksumSha256: actualChecksum,
           sizeBytes: actualBytes.toString(),
           optimization,
-          ...urls
+          ...urls,
         },
-        meta: { requestId: req.id }
+        meta: { requestId: req.id },
       });
     } catch (error) {
       await removeStorageFile(mediaAsset.storageKey);
@@ -752,60 +692,58 @@ router.post(
       await prisma.uploadSession.updateMany({
         where: {
           id: session.id,
-          status: "COMPLETING"
+          status: "COMPLETING",
         },
-        data: { status: "ACTIVE" }
+        data: { status: "ACTIVE" },
       });
 
       throw error;
     }
-  })
+  }),
 );
 
 router.delete(
   "/:uploadId",
   asyncHandler(async (req, res) => {
     const auth = req.auth!;
-    const uploadId = routeIdSchema.parse(
-      req.params.uploadId
-    );
+    const uploadId = routeIdSchema.parse(req.params.uploadId);
 
     const session = await prisma.uploadSession.findFirst({
       where: {
         id: uploadId,
         workspaceId: auth.workspaceId,
         userId: auth.userId,
-        status: "ACTIVE"
-      }
+        status: "ACTIVE",
+      },
     });
 
     if (!session) {
       throw new AppError(
         404,
         "UPLOAD_NOT_FOUND",
-        "Upload session was not found."
+        "Upload session was not found.",
       );
     }
 
     const chunks = await prisma.uploadChunk.findMany({
       where: { uploadSessionId: session.id },
-      select: { storageKey: true }
+      select: { storageKey: true },
     });
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       const claimed = await tx.uploadSession.updateMany({
         where: {
           id: session.id,
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
-        data: { status: "ABORTED" }
+        data: { status: "ABORTED" },
       });
 
       if (claimed.count !== 1) {
         throw new AppError(
           409,
           "UPLOAD_NOT_ACTIVE",
-          "Upload session is not active."
+          "Upload session is not active.",
         );
       }
 
@@ -821,12 +759,12 @@ router.delete(
       await tx.quotaReservation.updateMany({
         where: {
           sourceId: session.id,
-          status: "ACTIVE"
+          status: "ACTIVE",
         },
         data: {
           status: "RELEASED",
-          releasedAt: new Date()
-        }
+          releasedAt: new Date(),
+        },
       });
 
       if (session.paygOperationKeyPrefix) {
@@ -834,14 +772,14 @@ router.delete(
           where: {
             workspaceId: auth.workspaceId,
             operationKey: {
-              startsWith: session.paygOperationKeyPrefix
+              startsWith: session.paygOperationKeyPrefix,
             },
-            status: "ACTIVE"
+            status: "ACTIVE",
           },
           data: {
             status: "RELEASED",
-            releasedAt: new Date()
-          }
+            releasedAt: new Date(),
+          },
         });
       }
 
@@ -849,19 +787,17 @@ router.delete(
         where: { id: session.mediaAssetId },
         data: {
           status: "FAILED",
-          deletedAt: new Date()
-        }
+          deletedAt: new Date(),
+        },
       });
     });
 
     await Promise.all(
-      chunks.map(chunk =>
-        removeStorageFile(chunk.storageKey)
-      )
+      chunks.map((chunk) => removeStorageFile(chunk.storageKey)),
     );
 
     res.status(204).send();
-  })
+  }),
 );
 
 export default router;

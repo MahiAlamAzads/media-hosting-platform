@@ -46,8 +46,8 @@ export default function Page() {
           filename: file.name,
           contentType: file.type || "application/octet-stream",
           sizeBytes: file.size,
-          visibility: publicUpload ? "PUBLIC" : "PRIVATE"
-        })
+          visibility: publicUpload ? "PUBLIC" : "PRIVATE",
+        }),
       });
 
       const { uploadId, chunkSizeBytes } = init.data;
@@ -58,7 +58,7 @@ export default function Page() {
         const start = index * chunkSizeBytes;
         const body = file.slice(
           start,
-          Math.min(file.size, start + chunkSizeBytes)
+          Math.min(file.size, start + chunkSizeBytes),
         );
         const token = getAccessToken();
         const response = await fetch(
@@ -67,17 +67,17 @@ export default function Page() {
             method: "PUT",
             headers: {
               ...(token ? { authorization: `Bearer ${token}` } : {}),
-              "content-type": "application/octet-stream"
+              "content-type": "application/octet-stream",
             },
             credentials: "include",
-            body
-          }
+            body,
+          },
         );
 
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
           throw new Error(
-            payload?.error?.message ?? `Chunk ${index + 1} failed.`
+            payload?.error?.message ?? `Chunk ${index + 1} failed.`,
           );
         }
 
@@ -98,7 +98,7 @@ export default function Page() {
         };
       }>(`/api/v1/uploads/${uploadId}/complete`, {
         method: "POST",
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
 
       const publicUrl = completed.data.imgUrl ?? completed.data.fileUrl;
@@ -110,7 +110,7 @@ export default function Page() {
           ? `Upload completed. ${completed.data.optimization.outputFormat?.toUpperCase()} preview and thumbnail are being generated automatically.`
           : publicUrl
             ? "Upload completed. Your public CDN URL is ready."
-            : "Upload completed successfully. This file is private."
+            : "Upload completed successfully. This file is private.",
       );
     } catch (error) {
       setMessage((error as Error).message);
@@ -125,7 +125,10 @@ export default function Page() {
         title="Upload media"
         subtitle="Plan-aware resumable upload with atomic quota reservation."
       >
-        <a className="btn btn-outline-secondary" href="/dashboard/billing/usage">
+        <a
+          className="btn btn-outline-secondary"
+          href="/dashboard/billing/usage"
+        >
           View limits
         </a>
       </PageHeader>
@@ -181,7 +184,7 @@ export default function Page() {
                   role="switch"
                   id="publicUpload"
                   checked={publicUpload}
-                  onChange={event => setPublicUpload(event.target.checked)}
+                  onChange={(event) => setPublicUpload(event.target.checked)}
                 />
                 <label className="form-check-label" htmlFor="publicUpload">
                   Create a public CDN URL
@@ -226,7 +229,10 @@ export default function Page() {
 
               {uploadedUrl && (
                 <div className="text-start mt-4">
-                  <label className="form-label fw-semibold" htmlFor="uploadedImgUrl">
+                  <label
+                    className="form-label fw-semibold"
+                    htmlFor="uploadedImgUrl"
+                  >
                     CDN URL
                   </label>
                   <div className="input-group">
@@ -239,7 +245,9 @@ export default function Page() {
                     <button
                       className="btn btn-outline-secondary"
                       type="button"
-                      onClick={() => void navigator.clipboard.writeText(uploadedUrl)}
+                      onClick={() =>
+                        void navigator.clipboard.writeText(uploadedUrl)
+                      }
                     >
                       <i className="bi bi-copy me-1" />
                       Copy

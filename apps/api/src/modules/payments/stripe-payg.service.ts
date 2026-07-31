@@ -5,15 +5,11 @@ import { AppError } from "../../shared/http.js";
 type StripeObject = Record<string, any>;
 
 function assertStripeEnabled(): void {
-  if (
-    !env.PAYG_ENABLED ||
-    !env.STRIPE_PAYG_ENABLED ||
-    !env.STRIPE_SECRET_KEY
-  ) {
+  if (!env.PAYG_ENABLED || !env.STRIPE_PAYG_ENABLED || !env.STRIPE_SECRET_KEY) {
     throw new AppError(
       503,
       "STRIPE_PAYG_DISABLED",
-      "Stripe card-on-file PAYG is not configured."
+      "Stripe card-on-file PAYG is not configured.",
     );
   }
 }
@@ -23,7 +19,7 @@ async function stripeRequest(
   init: {
     method?: "GET" | "POST" | "DELETE";
     body?: URLSearchParams;
-  } = {}
+  } = {},
 ): Promise<StripeObject> {
   assertStripeEnabled();
 
@@ -33,13 +29,13 @@ async function stripeRequest(
       Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
       ...(init.body
         ? { "Content-Type": "application/x-www-form-urlencoded" }
-        : {})
+        : {}),
     },
     body: init.body,
-    signal: AbortSignal.timeout(20_000)
+    signal: AbortSignal.timeout(20_000),
   });
 
-  const payload = await response.json() as StripeObject;
+  const payload = (await response.json()) as StripeObject;
 
   if (!response.ok) {
     throw new AppError(
@@ -48,8 +44,8 @@ async function stripeRequest(
       payload?.error?.message ?? "Stripe request failed.",
       {
         stripeType: payload?.error?.type ?? null,
-        stripeCode: payload?.error?.code ?? null
-      }
+        stripeCode: payload?.error?.code ?? null,
+      },
     );
   }
 
@@ -79,47 +75,44 @@ export async function createStripeSetupCheckout(input: {
   body.set("payment_method_types[0]", "card");
   body.set(
     "success_url",
-    `${env.WEB_URL}/dashboard/billing/pay-as-you-go?card=success&session_id={CHECKOUT_SESSION_ID}`
+    `${env.WEB_URL}/dashboard/billing/pay-as-you-go?card=success&session_id={CHECKOUT_SESSION_ID}`,
   );
   body.set(
     "cancel_url",
-    `${env.WEB_URL}/dashboard/billing/pay-as-you-go?card=cancelled`
+    `${env.WEB_URL}/dashboard/billing/pay-as-you-go?card=cancelled`,
   );
   body.set("metadata[workspaceId]", input.workspaceId);
   body.set("setup_intent_data[usage]", "off_session");
-  body.set(
-    "setup_intent_data[metadata][workspaceId]",
-    input.workspaceId
-  );
+  body.set("setup_intent_data[metadata][workspaceId]", input.workspaceId);
 
   return stripeRequest("/checkout/sessions", {
     method: "POST",
-    body
+    body,
   });
 }
 
 export async function retrieveStripeCheckoutSession(
-  sessionId: string
+  sessionId: string,
 ): Promise<StripeObject> {
   return stripeRequest(
-    `/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=setup_intent&expand[]=setup_intent.payment_method`
+    `/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=setup_intent&expand[]=setup_intent.payment_method`,
   );
 }
 
 export async function retrieveStripeSetupIntent(
-  setupIntentId: string
+  setupIntentId: string,
 ): Promise<StripeObject> {
   return stripeRequest(
-    `/setup_intents/${encodeURIComponent(setupIntentId)}?expand[]=payment_method`
+    `/setup_intents/${encodeURIComponent(setupIntentId)}?expand[]=payment_method`,
   );
 }
 
 export async function detachStripePaymentMethod(
-  paymentMethodId: string
+  paymentMethodId: string,
 ): Promise<StripeObject> {
   return stripeRequest(
     `/payment_methods/${encodeURIComponent(paymentMethodId)}/detach`,
-    { method: "POST", body: new URLSearchParams() }
+    { method: "POST", body: new URLSearchParams() },
   );
 }
 
@@ -144,19 +137,19 @@ export async function chargeStripeOffSession(input: {
 
   return stripeRequest("/payment_intents", {
     method: "POST",
-    body
+    body,
   });
 }
 
 export function verifyStripeWebhook(
   rawBody: Buffer,
-  signatureHeader: string | undefined
+  signatureHeader: string | undefined,
 ): void {
   if (!env.STRIPE_WEBHOOK_SECRET) {
     throw new AppError(
       503,
       "STRIPE_WEBHOOK_NOT_CONFIGURED",
-      "Stripe webhook verification is not configured."
+      "Stripe webhook verification is not configured.",
     );
   }
 
@@ -164,15 +157,15 @@ export function verifyStripeWebhook(
     throw new AppError(
       400,
       "STRIPE_SIGNATURE_MISSING",
-      "Stripe signature header is missing."
+      "Stripe signature header is missing.",
     );
   }
 
   const parts = Object.fromEntries(
-    signatureHeader.split(",").map(part => {
+    signatureHeader.split(",").map((part) => {
       const [key, value] = part.split("=", 2);
       return [key, value];
-    })
+    }),
   );
   const timestamp = parts.t;
   const signature = parts.v1;
@@ -181,39 +174,32 @@ export function verifyStripeWebhook(
     throw new AppError(
       400,
       "STRIPE_SIGNATURE_INVALID",
-      "Stripe signature header is invalid."
+      "Stripe signature header is invalid.",
     );
   }
 
-  const ageSeconds =
-    Math.abs(Date.now() / 1000 - Number(timestamp));
+  const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
 
   if (!Number.isFinite(ageSeconds) || ageSeconds > 300) {
     throw new AppError(
       400,
       "STRIPE_SIGNATURE_EXPIRED",
-      "Stripe webhook timestamp is outside the allowed window."
+      "Stripe webhook timestamp is outside the allowed window.",
     );
   }
 
-  const expected = createHmac(
-    "sha256",
-    env.STRIPE_WEBHOOK_SECRET
-  )
+  const expected = createHmac("sha256", env.STRIPE_WEBHOOK_SECRET)
     .update(`${timestamp}.${rawBody.toString("utf8")}`)
     .digest("hex");
 
   const left = Buffer.from(expected, "hex");
   const right = Buffer.from(signature, "hex");
 
-  if (
-    left.length !== right.length ||
-    !timingSafeEqual(left, right)
-  ) {
+  if (left.length !== right.length || !timingSafeEqual(left, right)) {
     throw new AppError(
       400,
       "STRIPE_SIGNATURE_INVALID",
-      "Stripe webhook signature is invalid."
+      "Stripe webhook signature is invalid.",
     );
   }
 }

@@ -11,7 +11,7 @@ export function normalizeEmail(email: string): string {
 
 export async function enforceLoginThrottle(
   normalizedEmail: string,
-  ipAddress?: string
+  ipAddress?: string,
 ): Promise<void> {
   const since = new Date(Date.now() - WINDOW_MS);
 
@@ -20,28 +20,25 @@ export async function enforceLoginThrottle(
       where: {
         normalizedEmail,
         succeeded: false,
-        createdAt: { gte: since }
-      }
+        createdAt: { gte: since },
+      },
     }),
     ipAddress
       ? prisma.loginAttempt.count({
           where: {
             ipAddress,
             succeeded: false,
-            createdAt: { gte: since }
-          }
+            createdAt: { gte: since },
+          },
         })
-      : Promise.resolve(0)
+      : Promise.resolve(0),
   ]);
 
-  if (
-    emailFailures >= MAX_EMAIL_FAILURES ||
-    ipFailures >= MAX_IP_FAILURES
-  ) {
+  if (emailFailures >= MAX_EMAIL_FAILURES || ipFailures >= MAX_IP_FAILURES) {
     throw new AppError(
       429,
       "LOGIN_TEMPORARILY_LOCKED",
-      "Too many failed attempts. Try again later."
+      "Too many failed attempts. Try again later.",
     );
   }
 }
@@ -59,7 +56,7 @@ export async function recordLoginAttempt(input: {
       userId: input.userId,
       ipAddress: input.ipAddress,
       succeeded: input.succeeded,
-      reason: input.reason
-    }
+      reason: input.reason,
+    },
   });
 }

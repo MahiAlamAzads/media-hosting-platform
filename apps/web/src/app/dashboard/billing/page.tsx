@@ -10,7 +10,7 @@ import {
   formatMoneyMinor,
   metricLabels,
   progressClass,
-  type UsageMetricName
+  type UsageMetricName,
 } from "@/lib/billing-format";
 
 type Subscription = {
@@ -19,11 +19,7 @@ type Subscription = {
   interval: "MONTHLY" | "YEARLY";
   revenueModel: "SUBSCRIPTION" | "PREPAID_PAYG" | "ENTERPRISE_CUSTOM";
   subscriptionTerm:
-    | "FREE"
-    | "THREE_MONTHS"
-    | "SIX_MONTHS"
-    | "ONE_YEAR"
-    | "ENTERPRISE_CUSTOM";
+    "FREE" | "THREE_MONTHS" | "SIX_MONTHS" | "ONE_YEAR" | "ENTERPRISE_CUSTOM";
   commitmentEndsAt: string | null;
   periodStart: string;
   periodEnd: string;
@@ -82,7 +78,7 @@ const summaryMetrics: UsageMetricName[] = [
   "STORAGE_BYTES",
   "DELIVERY_BYTES",
   "API_REQUESTS",
-  "IMAGE_TRANSFORMATIONS"
+  "IMAGE_TRANSFORMATIONS",
 ];
 
 export default function BillingOverviewPage() {
@@ -95,14 +91,14 @@ export default function BillingOverviewPage() {
     Promise.all([
       apiRequest<{ data: Subscription }>("/api/v1/billing/subscription"),
       apiRequest<{ data: Usage }>("/api/v1/billing/usage"),
-      apiRequest<{ data: Wallet | null }>("/api/v1/billing/wallet")
+      apiRequest<{ data: Wallet | null }>("/api/v1/billing/wallet"),
     ])
       .then(([subscriptionResponse, usageResponse, walletResponse]) => {
         setSubscription(subscriptionResponse.data);
         setUsage(usageResponse.data);
         setWallet(walletResponse.data);
       })
-      .catch(value => setError(value.message));
+      .catch((value) => setError(value.message));
   }, []);
 
   return (
@@ -111,15 +107,23 @@ export default function BillingOverviewPage() {
         title="Billing overview"
         subtitle="Current plan, billing period, limits and projected usage."
       >
-        <a className="btn btn-outline-primary" href="/dashboard/billing/revenue-model">
+        <a
+          className="btn btn-outline-primary"
+          href="/dashboard/billing/revenue-model"
+        >
           Choose billing model
         </a>
-        <a className="btn btn-primary" href={
-          subscription?.revenueModel === "PREPAID_PAYG"
-            ? "/dashboard/billing/pay-as-you-go"
-            : "/dashboard/billing/plans"
-        }>
-          {subscription?.revenueModel === "PREPAID_PAYG" ? "Top up wallet" : "Compare plans"}
+        <a
+          className="btn btn-primary"
+          href={
+            subscription?.revenueModel === "PREPAID_PAYG"
+              ? "/dashboard/billing/pay-as-you-go"
+              : "/dashboard/billing/plans"
+          }
+        >
+          {subscription?.revenueModel === "PREPAID_PAYG"
+            ? "Top up wallet"
+            : "Compare plans"}
         </a>
       </PageHeader>
 
@@ -168,7 +172,10 @@ export default function BillingOverviewPage() {
                 <StatCard
                   icon="bi-wallet2"
                   label="Available wallet balance"
-                  value={formatMoneyMinor(wallet.availableMinor, wallet.currency)}
+                  value={formatMoneyMinor(
+                    wallet.availableMinor,
+                    wallet.currency,
+                  )}
                   hint={wallet.status}
                 />
               ) : (
@@ -183,9 +190,13 @@ export default function BillingOverviewPage() {
             <div className="col-sm-6 col-xl-3">
               <StatCard
                 icon="bi-calendar-range"
-                label={subscription.commitmentEndsAt ? "Commitment ends" : "Usage period ends"}
+                label={
+                  subscription.commitmentEndsAt
+                    ? "Commitment ends"
+                    : "Usage period ends"
+                }
                 value={new Date(
-                  subscription.commitmentEndsAt ?? subscription.periodEnd
+                  subscription.commitmentEndsAt ?? subscription.periodEnd,
                 ).toLocaleDateString()}
                 hint={subscription.status}
               />
@@ -203,10 +214,13 @@ export default function BillingOverviewPage() {
           {subscription.revenueModel === "PREPAID_PAYG" && (
             <div className="alert alert-primary d-flex flex-wrap align-items-center justify-content-between gap-3">
               <div>
-                <strong>Prepaid billing is active.</strong>{" "}
-                Every selected PAYG operation is deducted from your wallet before it runs.
+                <strong>Prepaid billing is active.</strong> Every selected PAYG
+                operation is deducted from your wallet before it runs.
               </div>
-              <a className="btn btn-primary btn-sm" href="/dashboard/billing/pay-as-you-go">
+              <a
+                className="btn btn-primary btn-sm"
+                href="/dashboard/billing/pay-as-you-go"
+              >
                 Manage wallet and meters
               </a>
             </div>
@@ -215,10 +229,13 @@ export default function BillingOverviewPage() {
           {subscription.revenueModel === "ENTERPRISE_CUSTOM" && (
             <div className="alert alert-dark d-flex flex-wrap align-items-center justify-content-between gap-3">
               <div>
-                <strong>Enterprise sales workflow is active.</strong>{" "}
-                Your requirements are handled through a custom commercial agreement.
+                <strong>Enterprise sales workflow is active.</strong> Your
+                requirements are handled through a custom commercial agreement.
               </div>
-              <a className="btn btn-light btn-sm" href="/dashboard/billing/enterprise">
+              <a
+                className="btn btn-light btn-sm"
+                href="/dashboard/billing/enterprise"
+              >
                 View inquiry
               </a>
             </div>
@@ -233,9 +250,9 @@ export default function BillingOverviewPage() {
             </div>
             <div className="card-body">
               <div className="row g-4">
-                {summaryMetrics.map(metricName => {
+                {summaryMetrics.map((metricName) => {
                   const metric = usage.metrics.find(
-                    item => item.metric === metricName
+                    (item) => item.metric === metricName,
                   );
                   if (!metric) return null;
 
@@ -247,7 +264,10 @@ export default function BillingOverviewPage() {
                           {metric.percent.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="progress usage-progress" role="progressbar">
+                      <div
+                        className="progress usage-progress"
+                        role="progressbar"
+                      >
                         <div
                           className={`progress-bar ${progressClass(metric.percent)}`}
                           style={{ width: `${Math.min(100, metric.percent)}%` }}
@@ -286,12 +306,16 @@ export default function BillingOverviewPage() {
                     </thead>
                     <tbody>
                       {usage.metrics
-                        .filter(item => item.projected !== item.current)
-                        .map(item => (
+                        .filter((item) => item.projected !== item.current)
+                        .map((item) => (
                           <tr key={item.metric}>
                             <td>{metricLabels[item.metric]}</td>
-                            <td>{formatMetricValue(item.metric, item.current)}</td>
-                            <td>{formatMetricValue(item.metric, item.projected)}</td>
+                            <td>
+                              {formatMetricValue(item.metric, item.current)}
+                            </td>
+                            <td>
+                              {formatMetricValue(item.metric, item.projected)}
+                            </td>
                             <td>{item.overage.formatted}</td>
                           </tr>
                         ))}
@@ -307,23 +331,38 @@ export default function BillingOverviewPage() {
                   <strong>Billing workflow</strong>
                 </div>
                 <div className="list-group list-group-flush">
-                  <a className="list-group-item list-group-item-action" href="/dashboard/billing/plans">
+                  <a
+                    className="list-group-item list-group-item-action"
+                    href="/dashboard/billing/plans"
+                  >
                     <i className="bi bi-boxes me-2 text-primary" />
                     Request a plan or currency change
                   </a>
-                  <a className="list-group-item list-group-item-action" href="/dashboard/billing/usage">
+                  <a
+                    className="list-group-item list-group-item-action"
+                    href="/dashboard/billing/usage"
+                  >
                     <i className="bi bi-bar-chart me-2 text-primary" />
                     Review limits and projections
                   </a>
-                  <a className="list-group-item list-group-item-action" href="/dashboard/billing/pay-as-you-go">
+                  <a
+                    className="list-group-item list-group-item-action"
+                    href="/dashboard/billing/pay-as-you-go"
+                  >
                     <i className="bi bi-lightning-charge me-2 text-primary" />
                     Configure saved-card pay as you go
                   </a>
-                  <a className="list-group-item list-group-item-action" href="/dashboard/billing/settings">
+                  <a
+                    className="list-group-item list-group-item-action"
+                    href="/dashboard/billing/settings"
+                  >
                     <i className="bi bi-receipt me-2 text-primary" />
                     Update billing identity
                   </a>
-                  <a className="list-group-item list-group-item-action" href="/dashboard/billing/payments">
+                  <a
+                    className="list-group-item list-group-item-action"
+                    href="/dashboard/billing/payments"
+                  >
                     <i className="bi bi-wallet2 me-2 text-primary" />
                     View invoices and payment history
                   </a>

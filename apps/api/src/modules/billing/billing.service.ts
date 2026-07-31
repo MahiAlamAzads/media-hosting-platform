@@ -1,15 +1,12 @@
 import { prisma, type Prisma } from "@media/database";
 import { env } from "../../config/env.js";
 import { AppError } from "../../shared/http.js";
-import {
-  cacheDelete,
-  cacheGetOrSet
-} from "../../infrastructure/cache.js";
+import { cacheDelete, cacheGetOrSet } from "../../infrastructure/cache.js";
 import type {
   BillingCurrencyName,
   BillingIntervalName,
   EntitlementValue,
-  UsageMetricName
+  UsageMetricName,
 } from "./billing.types.js";
 import { formatMoneyMinor, getPeriodBounds } from "./billing.utils.js";
 
@@ -21,23 +18,23 @@ export async function createFreeBillingForWorkspace(
     workspaceId: string;
     billingEmail?: string;
     currency?: BillingCurrencyName;
-  }
+  },
 ): Promise<void> {
   const freeVersion = await tx.planVersion.findFirst({
     where: {
       plan: { code: "FREE", isActive: true },
       publishedAt: { not: null },
-      retiredAt: null
+      retiredAt: null,
     },
     orderBy: { version: "desc" },
-    select: { id: true }
+    select: { id: true },
   });
 
   if (!freeVersion) {
     throw new AppError(
       503,
       "BILLING_NOT_CONFIGURED",
-      "The default plan is not configured."
+      "The default plan is not configured.",
     );
   }
 
@@ -55,8 +52,8 @@ export async function createFreeBillingForWorkspace(
       subscriptionTerm: "FREE",
       commitmentEndsAt: null,
       periodStart: period.start,
-      periodEnd: period.end
-    }
+      periodEnd: period.end,
+    },
   });
 
   await tx.billingPreference.create({
@@ -66,8 +63,8 @@ export async function createFreeBillingForWorkspace(
       preferredInterval: "MONTHLY",
       revenueModel: "SUBSCRIPTION",
       subscriptionTerm: "FREE",
-      billingEmail: input.billingEmail
-    }
+      billingEmail: input.billingEmail,
+    },
   });
 
   await tx.prepaidWallet.create({
@@ -77,14 +74,14 @@ export async function createFreeBillingForWorkspace(
       lowBalanceThresholdMinor:
         currency === "BDT"
           ? BigInt(env.PAYG_LOW_BALANCE_BDT_MINOR)
-          : BigInt(env.PAYG_LOW_BALANCE_USD_MINOR)
-    }
+          : BigInt(env.PAYG_LOW_BALANCE_USD_MINOR),
+    },
   });
 }
 
 export async function loadEntitlementsInTransaction(
   tx: BillingTransaction,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{
   subscriptionId: string;
   planCode: string;
@@ -99,10 +96,10 @@ export async function loadEntitlementsInTransaction(
       planVersion: {
         include: {
           plan: true,
-          entitlements: true
-        }
-      }
-    }
+          entitlements: true,
+        },
+      },
+    },
   });
 
   if (
@@ -112,7 +109,7 @@ export async function loadEntitlementsInTransaction(
     throw new AppError(
       402,
       "SUBSCRIPTION_INACTIVE",
-      "The workspace subscription is not active."
+      "The workspace subscription is not active.",
     );
   }
 
@@ -126,7 +123,7 @@ export async function loadEntitlementsInTransaction(
       overageAllowed: entitlement.overageAllowed,
       overageUnit: entitlement.overageUnit,
       overageBdtMinor: entitlement.overageBdtMinor,
-      overageUsdMinor: entitlement.overageUsdMinor
+      overageUsdMinor: entitlement.overageUsdMinor,
     });
   }
 
@@ -136,13 +133,13 @@ export async function loadEntitlementsInTransaction(
     currency: subscription.currency,
     periodStart: subscription.periodStart,
     periodEnd: subscription.periodEnd,
-    values
+    values,
   };
 }
 
 export function requireEntitlement(
   values: Map<UsageMetricName, EntitlementValue>,
-  metric: UsageMetricName
+  metric: UsageMetricName,
 ): EntitlementValue {
   const entitlement = values.get(metric);
 
@@ -150,101 +147,99 @@ export function requireEntitlement(
     throw new AppError(
       503,
       "ENTITLEMENT_NOT_CONFIGURED",
-      `Plan entitlement is missing for ${metric}.`
+      `Plan entitlement is missing for ${metric}.`,
     );
   }
 
   return entitlement;
 }
 
-async function loadPublicPricing(
-  currency: BillingCurrencyName
-) {
+async function loadPublicPricing(currency: BillingCurrencyName) {
   const plans = await prisma.plan.findMany({
     where: {
       isPublic: true,
-      isActive: true
+      isActive: true,
     },
     orderBy: { sortOrder: "asc" },
     include: {
       versions: {
         where: {
           publishedAt: { not: null },
-          retiredAt: null
+          retiredAt: null,
         },
         orderBy: { version: "desc" },
         take: 1,
         include: {
           prices: {
-            where: { currency, isActive: true }
+            where: { currency, isActive: true },
           },
           offers: {
             where: {
               currency,
               isActive: true,
-              isPublic: true
+              isPublic: true,
             },
-            orderBy: { amountMinor: "asc" }
+            orderBy: { amountMinor: "asc" },
           },
           entitlements: {
-            orderBy: { metric: "asc" }
-          }
-        }
-      }
-    }
+            orderBy: { metric: "asc" },
+          },
+        },
+      },
+    },
   });
 
-  return plans.flatMap(plan => {
+  return plans.flatMap((plan) => {
     const version = plan.versions[0];
     if (!version) return [];
 
     const price = (interval: BillingIntervalName) => {
-      const item = version.prices.find(value => value.interval === interval);
+      const item = version.prices.find((value) => value.interval === interval);
       return item
         ? {
             amountMinor: item.amountMinor.toString(),
-            formatted: formatMoneyMinor(item.amountMinor, currency)
+            formatted: formatMoneyMinor(item.amountMinor, currency),
           }
         : null;
     };
 
-    return [{
-      id: plan.id,
-      code: plan.code,
-      name: plan.name,
-      description: plan.description,
-      sortOrder: plan.sortOrder,
-      versionId: version.id,
-      version: version.version,
-      monthly: price("MONTHLY"),
-      yearly: price("YEARLY"),
-      offers: version.offers.map(item => ({
-        id: item.id,
-        term: item.term,
-        amountMinor: item.amountMinor.toString(),
-        formatted: formatMoneyMinor(item.amountMinor, currency)
-      })),
-      entitlements: version.entitlements.map(item => ({
-        metric: item.metric,
-        includedAmount: item.includedAmount.toString(),
-        hardLimit: item.hardLimit,
-        overageAllowed: item.overageAllowed,
-        overageUnit: item.overageUnit?.toString() ?? null,
-        overageBdtMinor: item.overageBdtMinor?.toString() ?? null,
-        overageUsdMinor: item.overageUsdMinor?.toString() ?? null
-      }))
-    }];
+    return [
+      {
+        id: plan.id,
+        code: plan.code,
+        name: plan.name,
+        description: plan.description,
+        sortOrder: plan.sortOrder,
+        versionId: version.id,
+        version: version.version,
+        monthly: price("MONTHLY"),
+        yearly: price("YEARLY"),
+        offers: version.offers.map((item) => ({
+          id: item.id,
+          term: item.term,
+          amountMinor: item.amountMinor.toString(),
+          formatted: formatMoneyMinor(item.amountMinor, currency),
+        })),
+        entitlements: version.entitlements.map((item) => ({
+          metric: item.metric,
+          includedAmount: item.includedAmount.toString(),
+          hardLimit: item.hardLimit,
+          overageAllowed: item.overageAllowed,
+          overageUnit: item.overageUnit?.toString() ?? null,
+          overageBdtMinor: item.overageBdtMinor?.toString() ?? null,
+          overageUsdMinor: item.overageUsdMinor?.toString() ?? null,
+        })),
+      },
+    ];
   });
 }
 
-export async function getPublicPricing(
-  currency: BillingCurrencyName
-) {
+export async function getPublicPricing(currency: BillingCurrencyName) {
   return cacheGetOrSet(
     "public-pricing",
     currency,
     env.REDIS_PRICING_TTL_SECONDS,
-    () => loadPublicPricing(currency)
+    () => loadPublicPricing(currency),
   );
 }
 

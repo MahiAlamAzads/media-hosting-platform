@@ -5,8 +5,234 @@ import { Feedback, LoadingBlock } from "@/components/feedback";
 import { Pagination } from "@/components/pagination";
 import { apiRequest } from "@/lib/api";
 import { formatBytes } from "@/lib/billing-format";
-type Workspace={id:string;name:string;slug:string;status:string;storageUsedBytes:string;storageReservedBytes:string;storageLimitBytes:string;createdAt:string;subscription:null|{status:string;currency:string;interval:string;periodEnd:string;planVersion:{version:number;plan:{code:string;name:string}}};_count:{members:number;mediaAssets:number;folders:number;apiKeys:number}};
-export default function WorkspacesPage(){const[items,setItems]=useState<Workspace[]>([]);const[loading,setLoading]=useState(true);const[query,setQuery]=useState('');const[status,setStatus]=useState('');const[page,setPage]=useState(1);const[pages,setPages]=useState(1);const[message,setMessage]=useState('');const[variant,setVariant]=useState<'success'|'danger'>('success');
- async function load(next=page){setLoading(true);try{const p=new URLSearchParams({page:String(next),limit:'25'});if(query)p.set('query',query);if(status)p.set('status',status);const r=await apiRequest<{data:Workspace[];meta:{totalPages:number}}>(`/api/v1/admin/console/workspaces?${p}`);setItems(r.data);setPages(r.meta.totalPages);setPage(next)}catch(e){setVariant('danger');setMessage((e as Error).message)}finally{setLoading(false)}}useEffect(()=>{void load(1)},[status]);async function search(e:FormEvent){e.preventDefault();await load(1)}
- async function change(item:Workspace,next:'ACTIVE'|'SUSPENDED'){if(!confirm(`${next==='SUSPENDED'?'Suspend':'Reactivate'} ${item.name}?`))return;try{await apiRequest(`/api/v1/admin/console/workspaces/${item.id}/status`,{method:'PATCH',body:JSON.stringify({status:next})});setVariant('success');setMessage(`Workspace ${next==='ACTIVE'?'reactivated':'suspended'}.`);await load()}catch(e){setVariant('danger');setMessage((e as Error).message)}}
- return <><PageHeader title="Workspaces" subtitle="Tenant-level status, subscription, storage and resource inventory."/><Feedback message={message} variant={variant} onClose={()=>setMessage('')}/><div className="card"><div className="card-body border-bottom"><form className="row g-2" onSubmit={search}><div className="col-md"><input className="form-control" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search workspace or slug"/></div><div className="col-md-3"><select className="form-select" value={status} onChange={e=>setStatus(e.target.value)}><option value="">All statuses</option><option>ACTIVE</option><option>SUSPENDED</option></select></div><div className="col-md-auto"><button className="btn btn-primary w-100">Search</button></div></form></div>{loading?<div className="card-body"><LoadingBlock/></div>:<div className="table-responsive"><table className="table mb-0"><thead><tr><th>Workspace</th><th>Plan</th><th>Storage</th><th>Resources</th><th>Status</th><th className="text-end">Action</th></tr></thead><tbody>{items.map(item=>{const percent=Math.min(100,Number(item.storageUsedBytes)*100/Math.max(1,Number(item.storageLimitBytes)));return <tr key={item.id}><td><strong>{item.name}</strong><div className="small text-secondary font-monospace">{item.slug}</div></td><td>{item.subscription?<><strong>{item.subscription.planVersion.plan.name}</strong><div className="small text-secondary">{item.subscription.currency} · {item.subscription.interval} · {item.subscription.status}</div></>:<span className="text-secondary">No subscription</span>}</td><td><div>{formatBytes(item.storageUsedBytes)} / {formatBytes(item.storageLimitBytes)}</div><div className="progress billing-meter mt-1"><div className="progress-bar" style={{width:`${percent}%`}}/></div></td><td><div className="small">{item._count.members} members · {item._count.mediaAssets} assets</div><div className="small text-secondary">{item._count.folders} folders · {item._count.apiKeys} keys</div></td><td><span className={`badge ${item.status==='ACTIVE'?'text-bg-success':'text-bg-warning'}`}>{item.status}</span></td><td className="text-end">{item.status==='ACTIVE'?<button className="btn btn-outline-danger btn-sm" onClick={()=>change(item,'SUSPENDED')}>Suspend</button>:<button className="btn btn-outline-success btn-sm" onClick={()=>change(item,'ACTIVE')}>Reactivate</button>}</td></tr>})}</tbody></table></div>}<Pagination page={page} totalPages={pages} onChange={p=>void load(p)}/></div></>}
+type Workspace = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  storageUsedBytes: string;
+  storageReservedBytes: string;
+  storageLimitBytes: string;
+  createdAt: string;
+  subscription: null | {
+    status: string;
+    currency: string;
+    interval: string;
+    periodEnd: string;
+    planVersion: { version: number; plan: { code: string; name: string } };
+  };
+  _count: {
+    members: number;
+    mediaAssets: number;
+    folders: number;
+    apiKeys: number;
+  };
+};
+export default function WorkspacesPage() {
+  const [items, setItems] = useState<Workspace[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [message, setMessage] = useState("");
+  const [variant, setVariant] = useState<"success" | "danger">("success");
+  async function load(next = page) {
+    setLoading(true);
+    try {
+      const p = new URLSearchParams({ page: String(next), limit: "25" });
+      if (query) p.set("query", query);
+      if (status) p.set("status", status);
+      const r = await apiRequest<{
+        data: Workspace[];
+        meta: { totalPages: number };
+      }>(`/api/v1/admin/console/workspaces?${p}`);
+      setItems(r.data);
+      setPages(r.meta.totalPages);
+      setPage(next);
+    } catch (e) {
+      setVariant("danger");
+      setMessage((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void load(1);
+  }, [status]);
+  async function search(e: FormEvent) {
+    e.preventDefault();
+    await load(1);
+  }
+  async function change(item: Workspace, next: "ACTIVE" | "SUSPENDED") {
+    if (
+      !confirm(
+        `${next === "SUSPENDED" ? "Suspend" : "Reactivate"} ${item.name}?`,
+      )
+    )
+      return;
+    try {
+      await apiRequest(`/api/v1/admin/console/workspaces/${item.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: next }),
+      });
+      setVariant("success");
+      setMessage(
+        `Workspace ${next === "ACTIVE" ? "reactivated" : "suspended"}.`,
+      );
+      await load();
+    } catch (e) {
+      setVariant("danger");
+      setMessage((e as Error).message);
+    }
+  }
+  return (
+    <>
+      <PageHeader
+        title="Workspaces"
+        subtitle="Tenant-level status, subscription, storage and resource inventory."
+      />
+      <Feedback
+        message={message}
+        variant={variant}
+        onClose={() => setMessage("")}
+      />
+      <div className="card">
+        <div className="card-body border-bottom">
+          <form className="row g-2" onSubmit={search}>
+            <div className="col-md">
+              <input
+                className="form-control"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search workspace or slug"
+              />
+            </div>
+            <div className="col-md-3">
+              <select
+                className="form-select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">All statuses</option>
+                <option>ACTIVE</option>
+                <option>SUSPENDED</option>
+              </select>
+            </div>
+            <div className="col-md-auto">
+              <button className="btn btn-primary w-100">Search</button>
+            </div>
+          </form>
+        </div>
+        {loading ? (
+          <div className="card-body">
+            <LoadingBlock />
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table mb-0">
+              <thead>
+                <tr>
+                  <th>Workspace</th>
+                  <th>Plan</th>
+                  <th>Storage</th>
+                  <th>Resources</th>
+                  <th>Status</th>
+                  <th className="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const percent = Math.min(
+                    100,
+                    (Number(item.storageUsedBytes) * 100) /
+                      Math.max(1, Number(item.storageLimitBytes)),
+                  );
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <strong>{item.name}</strong>
+                        <div className="small text-secondary font-monospace">
+                          {item.slug}
+                        </div>
+                      </td>
+                      <td>
+                        {item.subscription ? (
+                          <>
+                            <strong>
+                              {item.subscription.planVersion.plan.name}
+                            </strong>
+                            <div className="small text-secondary">
+                              {item.subscription.currency} ·{" "}
+                              {item.subscription.interval} ·{" "}
+                              {item.subscription.status}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-secondary">
+                            No subscription
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <div>
+                          {formatBytes(item.storageUsedBytes)} /{" "}
+                          {formatBytes(item.storageLimitBytes)}
+                        </div>
+                        <div className="progress billing-meter mt-1">
+                          <div
+                            className="progress-bar"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </td>
+                      <td>
+                        <div className="small">
+                          {item._count.members} members ·{" "}
+                          {item._count.mediaAssets} assets
+                        </div>
+                        <div className="small text-secondary">
+                          {item._count.folders} folders · {item._count.apiKeys}{" "}
+                          keys
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${item.status === "ACTIVE" ? "text-bg-success" : "text-bg-warning"}`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="text-end">
+                        {item.status === "ACTIVE" ? (
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => change(item, "SUSPENDED")}
+                          >
+                            Suspend
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-outline-success btn-sm"
+                            onClick={() => change(item, "ACTIVE")}
+                          >
+                            Reactivate
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <Pagination
+          page={page}
+          totalPages={pages}
+          onChange={(p) => void load(p)}
+        />
+      </div>
+    </>
+  );
+}

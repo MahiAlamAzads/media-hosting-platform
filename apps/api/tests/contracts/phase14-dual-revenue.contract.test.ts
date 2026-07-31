@@ -14,7 +14,7 @@ const protectedBillingRoutes = [
   ["post", "/api/v1/billing/wallet/topups"],
   ["post", "/api/v1/billing/subscription-offers/select"],
   ["patch", "/api/v1/billing/revenue-model"],
-  ["post", "/api/v1/billing/enterprise-inquiries"]
+  ["post", "/api/v1/billing/enterprise-inquiries"],
 ] as const;
 
 const protectedAdminRoutes = [
@@ -25,23 +25,24 @@ const protectedAdminRoutes = [
   ["get", "/api/v1/admin/console/wallets"],
   ["post", "/api/v1/admin/console/wallets/example-workspace/adjust"],
   ["get", "/api/v1/admin/console/enterprise-inquiries"],
-  ["patch", "/api/v1/admin/console/enterprise-inquiries/example-inquiry"]
+  ["patch", "/api/v1/admin/console/enterprise-inquiries/example-inquiry"],
 ] as const;
 
 describe("Phase 14 dual revenue contract", () => {
   for (const [method, path] of [
     ...protectedBillingRoutes,
-    ...protectedAdminRoutes
+    ...protectedAdminRoutes,
   ]) {
     it(`protects ${method.toUpperCase()} ${path}`, async () => {
       const agent = request(app);
-      const pending = method === "get"
-        ? agent.get(path)
-        : method === "post"
-          ? agent.post(path)
-          : method === "patch"
-            ? agent.patch(path)
-            : agent.delete(path);
+      const pending =
+        method === "get"
+          ? agent.get(path)
+          : method === "post"
+            ? agent.post(path)
+            : method === "patch"
+              ? agent.patch(path)
+              : agent.delete(path);
       const response = await pending.expect(401);
       expect(response.body.error.code).toBe("AUTH_REQUIRED");
     });
@@ -51,8 +52,8 @@ describe("Phase 14 dual revenue contract", () => {
     const document = JSON.parse(
       await readFile(
         resolve(currentDirectory, "../../src/openapi/openapi.json"),
-        "utf8"
-      )
+        "utf8",
+      ),
     ) as { paths: Record<string, Record<string, unknown>> };
 
     const expectedPaths = [
@@ -67,7 +68,7 @@ describe("Phase 14 dual revenue contract", () => {
       "/api/v1/admin/console/wallets/{workspaceId}/adjust",
       "/api/v1/admin/console/enterprise-inquiries",
       "/api/v1/admin/console/enterprise-inquiries/{inquiryId}",
-      "/api/v1/admin/plans/{planId}/versions/{versionId}/offers"
+      "/api/v1/admin/plans/{planId}/versions/{versionId}/offers",
     ];
 
     for (const path of expectedPaths) {
@@ -78,7 +79,7 @@ describe("Phase 14 dual revenue contract", () => {
   it("keeps prepaid wallet data free from raw card fields", async () => {
     const schema = await readFile(
       resolve(repositoryRoot, "packages/database/prisma/schema.prisma"),
-      "utf8"
+      "utf8",
     );
 
     expect(schema).toContain("model PrepaidWallet");
@@ -95,9 +96,9 @@ describe("Phase 14 dual revenue contract", () => {
     const migration = await readFile(
       resolve(
         repositoryRoot,
-        "packages/database/prisma/migrations/20260727233000_phase14_dual_revenue_prepaid_wallets/migration.sql"
+        "packages/database/prisma/migrations/20260727233000_phase14_dual_revenue_prepaid_wallets/migration.sql",
       ),
-      "utf8"
+      "utf8",
     );
 
     expect(migration).toContain('CREATE TABLE "PrepaidWallet"');

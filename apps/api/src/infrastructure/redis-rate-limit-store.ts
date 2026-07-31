@@ -2,7 +2,7 @@ import {
   MemoryStore,
   type IncrementResponse,
   type Options,
-  type Store
+  type Store,
 } from "express-rate-limit";
 import { redisKey, withRedis } from "./redis.js";
 
@@ -40,11 +40,11 @@ export class RedisRateLimitStore implements Store {
   }
 
   async increment(key: string): Promise<IncrementResponse> {
-    const redisResult = await withRedis(redis =>
+    const redisResult = await withRedis((redis) =>
       redis.eval(incrementScript, {
         keys: [redisKey("rate", this.prefix, key)],
-        arguments: [String(this.windowMs)]
-      })
+        arguments: [String(this.windowMs)],
+      }),
     );
 
     if (Array.isArray(redisResult)) {
@@ -52,7 +52,7 @@ export class RedisRateLimitStore implements Store {
       const ttlMs = Math.max(Number(redisResult[1]), 1);
       return {
         totalHits,
-        resetTime: new Date(Date.now() + ttlMs)
+        resetTime: new Date(Date.now() + ttlMs),
       };
     }
 
@@ -60,11 +60,11 @@ export class RedisRateLimitStore implements Store {
   }
 
   async decrement(key: string): Promise<void> {
-    const redisResult = await withRedis(redis =>
+    const redisResult = await withRedis((redis) =>
       redis.eval(decrementScript, {
         keys: [redisKey("rate", this.prefix, key)],
-        arguments: []
-      })
+        arguments: [],
+      }),
     );
 
     if (redisResult === undefined) {
@@ -73,13 +73,12 @@ export class RedisRateLimitStore implements Store {
   }
 
   async resetKey(key: string): Promise<void> {
-    const redisResult = await withRedis(redis =>
-      redis.del(redisKey("rate", this.prefix, key))
+    const redisResult = await withRedis((redis) =>
+      redis.del(redisKey("rate", this.prefix, key)),
     );
 
     if (redisResult === undefined) {
       await this.fallback.resetKey(key);
     }
   }
-
 }

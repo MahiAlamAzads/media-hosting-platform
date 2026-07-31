@@ -2,7 +2,7 @@ import type { ByteRange } from "./delivery.types.js";
 
 export function parseByteRange(
   rangeHeader: string | undefined,
-  fileSize: number
+  fileSize: number,
 ): ByteRange | null {
   if (!rangeHeader) return null;
   if (!Number.isSafeInteger(fileSize) || fileSize <= 0) return null;
@@ -18,16 +18,13 @@ export function parseByteRange(
   if (!rawStart) {
     const suffixLength = Number(rawEnd);
 
-    if (
-      !Number.isSafeInteger(suffixLength) ||
-      suffixLength <= 0
-    ) {
+    if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) {
       return null;
     }
 
     return {
       start: Math.max(0, fileSize - suffixLength),
-      end: fileSize - 1
+      end: fileSize - 1,
     };
   }
 
@@ -46,6 +43,6 @@ export function parseByteRange(
 
   return {
     start,
-    end: Math.min(end, fileSize - 1)
+    end: Math.min(end, fileSize - 1),
   };
 }

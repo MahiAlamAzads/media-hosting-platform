@@ -8,7 +8,8 @@ const router = Router();
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const currency = z.enum(["BDT", "USD"])
+    const currency = z
+      .enum(["BDT", "USD"])
       .default("BDT")
       .parse(req.query.currency);
 
@@ -17,11 +18,11 @@ router.get(
     res.json({
       data: {
         currency,
-        plans
+        plans,
       },
-      meta: { requestId: req.id }
+      meta: { requestId: req.id },
     });
-  })
+  }),
 );
 
 export default router;

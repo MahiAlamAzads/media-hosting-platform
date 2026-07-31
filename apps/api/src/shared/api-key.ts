@@ -8,10 +8,10 @@ export const API_KEY_SCOPES = [
   "folders:read",
   "folders:write",
   "uploads:write",
-  "usage:read"
+  "usage:read",
 ] as const;
 
-export type ApiKeyScope = typeof API_KEY_SCOPES[number];
+export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
 
 export function createApiKeyMaterial(): {
   rawKey: string;
@@ -27,7 +27,7 @@ export function createApiKeyMaterial(): {
     rawKey,
     keyId,
     prefix: `mh_live_${keyId.slice(0, 8)}`,
-    secretHash: hashApiKeySecret(secret)
+    secretHash: hashApiKeySecret(secret),
   };
 }
 
@@ -35,7 +35,9 @@ export function parseApiKey(rawKey: string): {
   keyId: string;
   secret: string;
 } | null {
-  const match = /^mh_live_([A-Za-z0-9_-]{16})\.([A-Za-z0-9_-]{40,})$/.exec(rawKey);
+  const match = /^mh_live_([A-Za-z0-9_-]{16})\.([A-Za-z0-9_-]{40,})$/.exec(
+    rawKey,
+  );
 
   if (!match) return null;
 
@@ -47,12 +49,10 @@ export function parseApiKey(rawKey: string): {
 
   return {
     keyId,
-    secret
+    secret,
   };
 }
 
 export function hashApiKeySecret(secret: string): string {
-  return createHmac("sha256", env.API_KEY_PEPPER)
-    .update(secret)
-    .digest("hex");
+  return createHmac("sha256", env.API_KEY_PEPPER).update(secret).digest("hex");
 }

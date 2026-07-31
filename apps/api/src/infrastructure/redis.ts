@@ -11,13 +11,13 @@ let connectedAt: Date | null = null;
 const counters = {
   commands: 0,
   commandErrors: 0,
-  reconnects: 0
+  reconnects: 0,
 };
 
 function safeRedisError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   return message
-    .replace(/rediss?:\/\/[^@\s]+@/gi, match => {
+    .replace(/rediss?:\/\/[^@\s]+@/gi, (match) => {
       const protocol = match.toLowerCase().startsWith("rediss://")
         ? "rediss"
         : "redis";
@@ -33,7 +33,7 @@ export function redisConfigured(): boolean {
 export function redisKey(...parts: Array<string | number>): string {
   return [
     env.REDIS_KEY_PREFIX,
-    ...parts.map(part => String(part).replace(/\s+/g, "-"))
+    ...parts.map((part) => String(part).replace(/\s+/g, "-")),
   ].join(":");
 }
 
@@ -51,12 +51,12 @@ function getOrCreateClient(): RedisClient | null {
           return new Error("Redis reconnect limit reached.");
         }
         return Math.min(250 * 2 ** retries, 5_000);
-      }
+      },
     },
-    disableOfflineQueue: true
+    disableOfflineQueue: true,
   });
 
-  client.on("error", error => {
+  client.on("error", (error) => {
     lastError = safeRedisError(error);
     counters.commandErrors += 1;
   });
@@ -74,9 +74,10 @@ export async function connectRedis(): Promise<void> {
   if (!redis || redis.isReady) return;
   if (connectionPromise) return connectionPromise;
 
-  const attempt = redis.connect()
+  const attempt = redis
+    .connect()
     .then(() => undefined)
-    .catch(error => {
+    .catch((error) => {
       lastError = safeRedisError(error);
       if (env.REDIS_REQUIRED) throw error;
       console.warn("Redis is unavailable; using safe local fallbacks.");
@@ -93,9 +94,9 @@ export async function connectRedis(): Promise<void> {
 
   await Promise.race([
     attempt,
-    new Promise<void>(resolve => {
+    new Promise<void>((resolve) => {
       setTimeout(resolve, env.REDIS_CONNECT_TIMEOUT_MS + 250);
-    })
+    }),
   ]);
 }
 
@@ -118,7 +119,7 @@ export function redisReady(): boolean {
 }
 
 export async function withRedis<T>(
-  operation: (redis: RedisClient) => Promise<T>
+  operation: (redis: RedisClient) => Promise<T>,
 ): Promise<T | undefined> {
   const redis = getOrCreateClient();
   if (!redis) return undefined;
@@ -151,6 +152,6 @@ export function getRedisHealth() {
     isReady: Boolean(client?.isReady),
     connectedAt: connectedAt?.toISOString() ?? null,
     lastError,
-    counters: { ...counters }
+    counters: { ...counters },
   };
 }

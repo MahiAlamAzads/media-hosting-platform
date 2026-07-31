@@ -117,7 +117,7 @@ export default function BillingControlPage() {
     setLoading(true);
     try {
       const response = await apiRequest<{ data: BillingQueue }>(
-        "/api/v1/admin/console/billing-control"
+        "/api/v1/admin/console/billing-control",
       );
       setData(response.data);
       setMessage("");
@@ -142,25 +142,61 @@ export default function BillingControlPage() {
         title="Billing control center"
         subtitle="One operational queue for subscription requests, payments, wallet top-ups and enterprise follow-up."
       >
-        <button className="btn btn-outline-secondary" onClick={() => void load()}>
-          <i className="bi bi-arrow-clockwise me-1" />Refresh
+        <button
+          className="btn btn-outline-secondary"
+          onClick={() => void load()}
+        >
+          <i className="bi bi-arrow-clockwise me-1" />
+          Refresh
         </button>
       </PageHeader>
 
-      <Feedback message={message} variant="danger" onClose={() => setMessage("")} />
+      <Feedback
+        message={message}
+        variant="danger"
+        onClose={() => setMessage("")}
+      />
 
       {data && (
         <>
           <div className="row g-3 mb-4">
             {[
-              ["Subscription requests", data.counts.subscriptionChanges, "bi-arrow-repeat", "/subscriptions"],
-              ["Pending payments", data.counts.payments, "bi-cash-coin", "/payments"],
-              ["Open top-ups", data.counts.walletTopups, "bi-wallet2", "/wallets"],
-              ["Enterprise requests", data.counts.enterpriseInquiries, "bi-buildings", "/enterprise-inquiries"],
-              ["Needs attention", data.counts.attentionSubscriptions, "bi-exclamation-triangle", "/subscriptions"]
+              [
+                "Subscription requests",
+                data.counts.subscriptionChanges,
+                "bi-arrow-repeat",
+                "/subscriptions",
+              ],
+              [
+                "Pending payments",
+                data.counts.payments,
+                "bi-cash-coin",
+                "/payments",
+              ],
+              [
+                "Open top-ups",
+                data.counts.walletTopups,
+                "bi-wallet2",
+                "/wallets",
+              ],
+              [
+                "Enterprise requests",
+                data.counts.enterpriseInquiries,
+                "bi-buildings",
+                "/enterprise-inquiries",
+              ],
+              [
+                "Needs attention",
+                data.counts.attentionSubscriptions,
+                "bi-exclamation-triangle",
+                "/subscriptions",
+              ],
             ].map(([label, count, icon, href]) => (
               <div className="col-sm-6 col-xl" key={String(label)}>
-                <a className="card h-100 text-decoration-none text-reset" href={String(href)}>
+                <a
+                  className="card h-100 text-decoration-none text-reset"
+                  href={String(href)}
+                >
                   <div className="card-body">
                     <div className="d-flex align-items-center justify-content-between gap-3">
                       <div>
@@ -178,22 +214,75 @@ export default function BillingControlPage() {
           <div className="card mb-4">
             <div className="card-header d-flex justify-content-between align-items-center">
               <strong>Pending subscription requests</strong>
-              <a className="btn btn-sm btn-outline-primary" href="/subscriptions">Manage subscriptions</a>
+              <a
+                className="btn btn-sm btn-outline-primary"
+                href="/subscriptions"
+              >
+                Manage subscriptions
+              </a>
             </div>
             {data.subscriptionChanges.length === 0 ? (
-              <EmptyState icon="bi-check2-circle" title="No pending subscription requests" text="All subscription requests are resolved." />
+              <EmptyState
+                icon="bi-check2-circle"
+                title="No pending subscription requests"
+                text="All subscription requests are resolved."
+              />
             ) : (
               <div className="table-responsive">
                 <table className="table table-hover align-middle mb-0">
-                  <thead><tr><th>Workspace</th><th>Requested plan</th><th>Requested by</th><th>Invoice</th><th>Status</th><th>Created</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Workspace</th>
+                      <th>Requested plan</th>
+                      <th>Requested by</th>
+                      <th>Invoice</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {data.subscriptionChanges.map(item => (
+                    {data.subscriptionChanges.map((item) => (
                       <tr key={item.id}>
-                        <td><strong>{item.workspace.name}</strong><div className="small text-secondary">{item.workspace.slug}</div></td>
-                        <td>{item.requestedPlan.name} v{item.requestedPlan.version}<div className="small text-secondary">{item.currency} · {item.subscriptionTerm.replaceAll("_", " ")}</div></td>
-                        <td>{item.requestedBy.name}<div className="small text-secondary">{item.requestedBy.email}</div></td>
-                        <td>{item.invoice ? <><strong>{item.invoice.number}</strong><div className="small text-secondary">{formatMoneyMinor(item.invoice.amountMinor, item.invoice.currency)}</div></> : <span className="text-secondary">No invoice</span>}</td>
-                        <td><span className={`badge ${statusClass(item.status)}`}>{item.status}</span></td>
+                        <td>
+                          <strong>{item.workspace.name}</strong>
+                          <div className="small text-secondary">
+                            {item.workspace.slug}
+                          </div>
+                        </td>
+                        <td>
+                          {item.requestedPlan.name} v
+                          {item.requestedPlan.version}
+                          <div className="small text-secondary">
+                            {item.currency} ·{" "}
+                            {item.subscriptionTerm.replaceAll("_", " ")}
+                          </div>
+                        </td>
+                        <td>
+                          {item.requestedBy.name}
+                          <div className="small text-secondary">
+                            {item.requestedBy.email}
+                          </div>
+                        </td>
+                        <td>
+                          {item.invoice ? (
+                            <>
+                              <strong>{item.invoice.number}</strong>
+                              <div className="small text-secondary">
+                                {formatMoneyMinor(
+                                  item.invoice.amountMinor,
+                                  item.invoice.currency,
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <span className="text-secondary">No invoice</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`badge ${statusClass(item.status)}`}>
+                            {item.status}
+                          </span>
+                        </td>
                         <td>{new Date(item.createdAt).toLocaleString()}</td>
                       </tr>
                     ))}
@@ -208,22 +297,68 @@ export default function BillingControlPage() {
               <div className="card h-100">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <strong>Payments waiting for action</strong>
-                  <a className="btn btn-sm btn-outline-primary" href="/payments">Open payment review</a>
+                  <a
+                    className="btn btn-sm btn-outline-primary"
+                    href="/payments"
+                  >
+                    Open payment review
+                  </a>
                 </div>
                 {data.payments.length === 0 ? (
-                  <EmptyState icon="bi-check2-circle" title="No pending payments" text="No payment requires processing or review." />
+                  <EmptyState
+                    icon="bi-check2-circle"
+                    title="No pending payments"
+                    text="No payment requires processing or review."
+                  />
                 ) : (
                   <div className="table-responsive">
                     <table className="table table-hover align-middle mb-0">
-                      <thead><tr><th>Invoice</th><th>Workspace</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Invoice</th>
+                          <th>Workspace</th>
+                          <th>Amount</th>
+                          <th>Method</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {data.payments.map(item => (
+                        {data.payments.map((item) => (
                           <tr key={item.id}>
-                            <td><strong>{item.invoice.number}</strong><div className="small text-secondary">{item.invoice.kind.replaceAll("_", " ")}</div></td>
-                            <td>{item.invoice.workspace.name}<div className="small text-secondary">{item.invoice.requestedBy.email}</div></td>
-                            <td>{formatMoneyMinor(item.amountMinor, item.currency)}</td>
-                            <td>{item.method}{item.manualSubmission && <div className="small text-secondary">Ref {item.manualSubmission.transactionReference}</div>}</td>
-                            <td><span className={`badge ${statusClass(item.status)}`}>{item.status}</span></td>
+                            <td>
+                              <strong>{item.invoice.number}</strong>
+                              <div className="small text-secondary">
+                                {item.invoice.kind.replaceAll("_", " ")}
+                              </div>
+                            </td>
+                            <td>
+                              {item.invoice.workspace.name}
+                              <div className="small text-secondary">
+                                {item.invoice.requestedBy.email}
+                              </div>
+                            </td>
+                            <td>
+                              {formatMoneyMinor(
+                                item.amountMinor,
+                                item.currency,
+                              )}
+                            </td>
+                            <td>
+                              {item.method}
+                              {item.manualSubmission && (
+                                <div className="small text-secondary">
+                                  Ref{" "}
+                                  {item.manualSubmission.transactionReference}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <span
+                                className={`badge ${statusClass(item.status)}`}
+                              >
+                                {item.status}
+                              </span>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -237,19 +372,36 @@ export default function BillingControlPage() {
               <div className="card h-100">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <strong>Open wallet top-ups</strong>
-                  <a className="btn btn-sm btn-outline-primary" href="/wallets">Manage wallets</a>
+                  <a className="btn btn-sm btn-outline-primary" href="/wallets">
+                    Manage wallets
+                  </a>
                 </div>
                 {data.walletTopups.length === 0 ? (
-                  <EmptyState icon="bi-check2-circle" title="No open top-ups" text="There are no unpaid wallet top-up invoices." />
+                  <EmptyState
+                    icon="bi-check2-circle"
+                    title="No open top-ups"
+                    text="There are no unpaid wallet top-up invoices."
+                  />
                 ) : (
                   <div className="list-group list-group-flush">
-                    {data.walletTopups.map(item => (
+                    {data.walletTopups.map((item) => (
                       <div className="list-group-item" key={item.id}>
                         <div className="d-flex justify-content-between gap-3">
-                          <div><strong>{item.workspace.name}</strong><div className="small text-secondary">{item.number} · {item.requestedBy.email}</div></div>
-                          <strong>{formatMoneyMinor(item.amountMinor, item.currency)}</strong>
+                          <div>
+                            <strong>{item.workspace.name}</strong>
+                            <div className="small text-secondary">
+                              {item.number} · {item.requestedBy.email}
+                            </div>
+                          </div>
+                          <strong>
+                            {formatMoneyMinor(item.amountMinor, item.currency)}
+                          </strong>
                         </div>
-                        <div className="small text-secondary mt-1">Due {new Date(item.dueAt).toLocaleDateString()} · Latest payment {item.latestPayment?.status ?? "not started"}</div>
+                        <div className="small text-secondary mt-1">
+                          Due {new Date(item.dueAt).toLocaleDateString()} ·
+                          Latest payment{" "}
+                          {item.latestPayment?.status ?? "not started"}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -263,16 +415,38 @@ export default function BillingControlPage() {
               <div className="card h-100">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <strong>Subscriptions needing attention</strong>
-                  <a className="btn btn-sm btn-outline-primary" href="/subscriptions">Manual control</a>
+                  <a
+                    className="btn btn-sm btn-outline-primary"
+                    href="/subscriptions"
+                  >
+                    Manual control
+                  </a>
                 </div>
                 {data.attentionSubscriptions.length === 0 ? (
-                  <EmptyState icon="bi-check2-circle" title="No subscription alerts" text="No active workspace is past due, suspended or expired." />
+                  <EmptyState
+                    icon="bi-check2-circle"
+                    title="No subscription alerts"
+                    text="No active workspace is past due, suspended or expired."
+                  />
                 ) : (
                   <div className="list-group list-group-flush">
-                    {data.attentionSubscriptions.map(item => (
-                      <div className="list-group-item d-flex justify-content-between gap-3" key={item.id}>
-                        <div><strong>{item.workspace.name}</strong><div className="small text-secondary">{item.plan.name} · period ended {new Date(item.periodEnd).toLocaleDateString()}</div></div>
-                        <span className={`badge align-self-start ${statusClass(item.status)}`}>{item.status}</span>
+                    {data.attentionSubscriptions.map((item) => (
+                      <div
+                        className="list-group-item d-flex justify-content-between gap-3"
+                        key={item.id}
+                      >
+                        <div>
+                          <strong>{item.workspace.name}</strong>
+                          <div className="small text-secondary">
+                            {item.plan.name} · period ended{" "}
+                            {new Date(item.periodEnd).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <span
+                          className={`badge align-self-start ${statusClass(item.status)}`}
+                        >
+                          {item.status}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -284,16 +458,37 @@ export default function BillingControlPage() {
               <div className="card h-100">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <strong>Enterprise follow-up</strong>
-                  <a className="btn btn-sm btn-outline-primary" href="/enterprise-inquiries">Manage inquiries</a>
+                  <a
+                    className="btn btn-sm btn-outline-primary"
+                    href="/enterprise-inquiries"
+                  >
+                    Manage inquiries
+                  </a>
                 </div>
                 {data.enterpriseInquiries.length === 0 ? (
-                  <EmptyState icon="bi-check2-circle" title="No enterprise requests" text="No enterprise inquiry is waiting for follow-up." />
+                  <EmptyState
+                    icon="bi-check2-circle"
+                    title="No enterprise requests"
+                    text="No enterprise inquiry is waiting for follow-up."
+                  />
                 ) : (
                   <div className="list-group list-group-flush">
-                    {data.enterpriseInquiries.map(item => (
-                      <div className="list-group-item d-flex justify-content-between gap-3" key={item.id}>
-                        <div><strong>{item.companyName}</strong><div className="small text-secondary">{item.contactName} · {item.email}</div></div>
-                        <span className={`badge align-self-start ${statusClass(item.status)}`}>{item.status}</span>
+                    {data.enterpriseInquiries.map((item) => (
+                      <div
+                        className="list-group-item d-flex justify-content-between gap-3"
+                        key={item.id}
+                      >
+                        <div>
+                          <strong>{item.companyName}</strong>
+                          <div className="small text-secondary">
+                            {item.contactName} · {item.email}
+                          </div>
+                        </div>
+                        <span
+                          className={`badge align-self-start ${statusClass(item.status)}`}
+                        >
+                          {item.status}
+                        </span>
                       </div>
                     ))}
                   </div>
